@@ -18,7 +18,7 @@
     { name: '角色概览', path: '/overview' },
     { name: '图库', path: '/gallery' },
     { name: '时间线', path: '/timeline' },
-    { name: '关于', path: '/about' }
+    { name: '对话狂三', path: '/talk' }
   ])
   </script>
   
