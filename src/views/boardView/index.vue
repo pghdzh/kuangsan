@@ -1,61 +1,65 @@
 <template>
     <div class="board-page">
-        <h1 class="title">時崎狂三の留言板</h1>
-        <div class="messages" ref="msgList">
-            <transition-group name="fade" tag="div">
-                <div v-for="(msg, index) in messages" :key="index" class="message">
-                    <div class="header">
-                        <span class="nickname">{{ msg.nickname }}</span>
-                        <span class="time">{{ formatTime(msg.time) }}</span>
-                    </div>
-                    <div class="content">
-                        <div class="text" v-html="msg.text"></div>
-                    </div>
-                </div>
-            </transition-group>
+
+  
+      <!-- 留言列表 -->
+      <main class="messages" ref="msgList">
+        <transition-group name="fade" tag="div">
+          <div v-for="(msg, index) in messages" :key="index" class="message">
+            <div class="msg-header">
+              <span class="nickname">{{ msg.nickname }}</span>
+              <span class="time">{{ formatTime(msg.time) }}</span>
+            </div>
+            <div class="msg-content" v-html="msg.text"></div>
+          </div>
+        </transition-group>
+      </main>
+  
+      <!-- 底部输入区 -->
+      <footer class="input-area">
+        <div class="input-wrapper">
+          <input v-model="nickname" type="text" placeholder="你的昵称…" :disabled="loading" />
+          <textarea v-model="input" placeholder="留下你的心声…" :disabled="loading"></textarea>
+          <button @click.prevent="postMessage" :disabled="!input.trim() || !nickname.trim() || loading">送信</button>
         </div>
-        <form class="input-area" @submit.prevent="postMessage">
-            <input v-model="nickname" type="text" placeholder="你的昵称…" :disabled="loading" />
-            <textarea v-model="input" placeholder="留下你的心声…" :disabled="loading"></textarea>
-            <button type="submit" :disabled="!input.trim() || !nickname.trim() || loading">送信</button>
-        </form>
+      </footer>
     </div>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
-import MarkdownIt from 'markdown-it'
-
-const STORAGE_KEY = 'kurumi_board'
-const md = new MarkdownIt()
-
-interface Msg { nickname: string; text: string; time: number }
-
-const messages = ref<Msg[]>(loadMessages())
-const nickname = ref('')
-const input = ref('')
-const loading = ref(false)
-const msgList = ref<HTMLElement>()
-
-function loadMessages(): Msg[] {
+  </template>
+  
+  <script setup lang="ts">
+  import { ref, onMounted, nextTick } from 'vue'
+  import MarkdownIt from 'markdown-it'
+  
+  const STORAGE_KEY = 'kurumi_board'
+  const md = new MarkdownIt()
+  
+  interface Msg { nickname: string; text: string; time: number }
+  
+  const messages = ref<Msg[]>(loadMessages())
+  const nickname = ref('')
+  const input = ref('')
+  const loading = ref(false)
+  const msgList = ref<HTMLElement>()
+  
+  function loadMessages(): Msg[] {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
-        try { return JSON.parse(saved) }
-        catch { return [] }
+      try { return JSON.parse(saved) }
+      catch { return [] }
     }
     return []
-}
-
-function saveMessages() {
+  }
+  
+  function saveMessages() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.value))
-}
-
-function formatTime(ts: number) {
+  }
+  
+  function formatTime(ts: number) {
     const d = new Date(ts)
     return d.toLocaleString('ja-JP', { hour12: false })
-}
-
-async function postMessage() {
+  }
+  
+  async function postMessage() {
     if (!input.value.trim() || !nickname.value.trim()) return
     loading.value = true
     const text = md.render(input.value)
@@ -64,126 +68,116 @@ async function postMessage() {
     saveMessages()
     await scrollBottom()
     loading.value = false
-}
-
-async function scrollBottom() {
+  }
+  
+  async function scrollBottom() {
     await nextTick()
     if (msgList.value) msgList.value.scrollTop = msgList.value.scrollHeight
-}
-
-onMounted(() => {
+  }
+  
+  onMounted(() => {
     scrollBottom()
-})
-</script>
-
-<style scoped>
-.board-page {
-    width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-    background: #1a0f1a;
-    color: #fff;
-    font-family: 'Creepster', sans-serif;
+  })
+  </script>
+  
+  <style scoped>
+  .board-page {
     display: flex;
     flex-direction: column;
     height: 100vh;
-}
-
-.title {
+    padding-top: 64px;
+    background: linear-gradient(135deg, #1a0f1a, #0d000f);
+    color: #fff;
+    font-family: 'Creepster', sans-serif;
+  }
+  
+  .header-bar {
+    padding: 20px;
     text-align: center;
+    background: rgba(0,0,0,0.7);
+  }
+  .title {
+    margin: 0;
     font-size: 2.5rem;
     color: #ff0033;
-    margin-bottom: 20px;
-}
-
-.messages {
+  }
+  
+  .messages {
     flex: 1;
+    width: 40%;
     overflow-y: auto;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid #33001a;
-    border-radius: 8px;
-}
-
-.message {
+    padding: 20px;
+    margin: 0 auto;
+  }
+  
+  .message {
     margin-bottom: 16px;
-    animation: fade-in 0.5s;
-}
-
-.header {
+    animation: fade-in 0.4s;
+  }
+  
+  .msg-header {
     display: flex;
-    justify-content: space-between;
     margin-bottom: 4px;
-}
-
-.nickname {
+  }
+  .nickname {
     font-weight: bold;
     color: #ff79c6;
-}
-
-.time {
+    margin-right: 20px;
+  }
+  .time {
     font-size: 0.75rem;
     opacity: 0.6;
-}
-
-.content {
-    background: rgba(255, 0, 51, 0.1);
-    border: 1px solid rgba(255, 0, 51, 0.4);
+  }
+  
+  .msg-content {
+    background: rgba(255,0,51,0.1);
+    border: 1px solid rgba(255,0,51,0.4);
     backdrop-filter: blur(6px);
     padding: 12px;
     border-radius: 12px;
-}
-
-.input-area {
+  }
+  
+  .input-area {
+    padding: 10px 0;
+  }
+  .input-wrapper {
+    max-width: 700px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding-top: 10px;
-}
-
-.input-area input,
-.input-area textarea {
-    width: 90%;
-    margin-bottom: 8px;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .input-wrapper input,
+  .input-wrapper textarea {
+    width: 100%;
     padding: 12px;
     font-size: 1rem;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0,0,0,0.6);
     border: 1px solid #33001a;
     color: #fff;
     border-radius: 8px;
     outline: none;
-}
-
-.input-area textarea {
-    height: 80px;
-    resize: none;
-}
-
-.input-area button {
-    padding: 8px 16px;
-    background: linear-gradient(to right, #ff0033, #990033);
+  }
+  .input-wrapper textarea { height: 80px; resize: none; }
+  
+  .input-wrapper button {
+    align-self: center;
+    padding: 8px 24px;
     border: none;
     border-radius: 8px;
     color: #fff;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.3s;
-}
-
-.input-area button:disabled {
+  }
+  .input-wrapper button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-</style>
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  </style>
+  

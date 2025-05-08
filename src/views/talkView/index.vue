@@ -3,7 +3,11 @@
     <div class="chat-container">
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
+          <div
+            v-for="msg in chatLog"
+            :key="msg.id"
+            :class="['message', msg.role, { error: msg.isError }]"
+          >
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -16,11 +20,21 @@
         </transition-group>
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
-        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="向时崎狂三提问…"
+          :disabled="loading"
+          @keydown="handleKeydown"
+        />
         <button type="submit" :disabled="!input.trim() || loading">发送</button>
         <button type="button" class="clear-btn" @click="clearChat">清空</button>
-        <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled">
-          {{ isVoiceEnabled ? '语音开启🔊' : '语音关闭🔇' }}
+        <button
+          type="button"
+          class="voice-btn"
+          @click="isVoiceEnabled = !isVoiceEnabled"
+        >
+          {{ isVoiceEnabled ? "语音开启🔊" : "语音关闭🔇" }}
         </button>
       </form>
     </div>
@@ -28,151 +42,200 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch, onBeforeUnmount } from 'vue'
-import { sendMessageToChatGPT } from "@/api/opaiApi"
-import MarkdownIt from 'markdown-it'
+import { ref, onMounted, nextTick, watch, onBeforeUnmount } from "vue";
+import { sendMessageToChatGPT } from "@/api/opaiApi";
+import MarkdownIt from "markdown-it";
 
-const md = new MarkdownIt()
-const STORAGE_KEY = "kurumi_chat_log"
-const STORAGE_VOICE_KEY = "kurumi_voice_enabled"
+const md = new MarkdownIt();
+const STORAGE_KEY = "kurumi_chat_log";
+const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
 
 interface ChatMsg {
-  id: number
-  role: 'user' | 'bot'
-  text: string
-  isError?: boolean
-  isEgg?: boolean
+  id: number;
+  role: "user" | "bot";
+  text: string;
+  isError?: boolean;
+  isEgg?: boolean;
 }
 
-const chatLog = ref<ChatMsg[]>(loadChatLog())
-const input = ref('')
-const loading = ref(false)
-const msgList = ref<HTMLElement>()
-const isVoiceEnabled = ref(loadVoiceSetting())
+const chatLog = ref<ChatMsg[]>(loadChatLog());
+const input = ref("");
+const loading = ref(false);
+const msgList = ref<HTMLElement>();
+const isVoiceEnabled = ref(loadVoiceSetting());
+// 鼓励彩蛋列表
+const encourageEggs = [
+  { file: "Encourage (1).mp3", text: "失败只是过程而已，你一定能跨过去♡" },
+  { file: "Encourage (2).mp3", text: "下一步也由我在背后守护你…♡" },
+  { file: "Encourage (3).mp3", text: "别着急♡你已经很努力了" },
+  { file: "Encourage (4).mp3", text: "就算在黑暗中，我也会为你照亮…放心♡" },
+  { file: "Encourage (5).mp3", text: "相信自己…结果会随之而来♡" },
+  { file: "Encourage (6).mp3", text: "即便是小小的一步，也是实实在在的前进♡" },
+  { file: "Encourage (7).mp3", text: "你的努力我都看得见…我也很开心♡" },
+  { file: "Encourage (8).mp3", text: "累了就休息，不要勉强自己♡" },
+];
 
 // 1. 定义无输入彩蛋列表
 const noInputEggs = [
-  { file: 'noInput (1).mp3', text: '喂…别一直沉默，说点什么嘛♡' },
-  { file: 'noInput (2).mp3', text: '无聊了吗？能听到我的声音吗？' },
-  { file: 'noInput (3).mp3', text: '这么安静…仿佛时间都停止了♡' },
-  { file: 'noInput (4).mp3', text: '呵呵，就不跟我说句话吗？' },
-  { file: 'noInput (5).mp3', text: '只有时间在流逝…好寂寞呢♡' }
-]
-let idleTimer: ReturnType<typeof setTimeout>
+  { file: "noInput (1).mp3", text: "喂…别一直沉默，说点什么嘛♡" },
+  { file: "noInput (2).mp3", text: "无聊了吗？能听到我的声音吗？" },
+  { file: "noInput (3).mp3", text: "这么安静…仿佛时间都停止了♡" },
+  { file: "noInput (4).mp3", text: "呵呵，就不跟我说句话吗？" },
+  { file: "noInput (5).mp3", text: "只有时间在流逝…好寂寞呢♡" },
+];
+let idleTimer: ReturnType<typeof setTimeout>;
 // 2. 触发彩蛋的方法（随机挑选、打标记）
 function triggerNoInputEgg() {
-  const egg = noInputEggs[Math.floor(Math.random() * noInputEggs.length)]
+  const egg = noInputEggs[Math.floor(Math.random() * noInputEggs.length)];
   // 播放对应语音
-  playVoice(egg.file.replace('.mp3', ''))
+  playVoice(egg.file.replace(".mp3", ""));
   // 推入气泡，标记 isEgg: true
   chatLog.value.push({
     id: Date.now(),
-    role: 'bot',
-    text: md.render(`<p style="opacity:.7">${egg.text}</p>`),
-    isEgg: true
-  })
-  resetIdleTimer()  // 重新启动定时器
+    role: "bot",
+    text: `<p style="opacity:.7;color: #ffb3c1;">${egg.text}</p>`,
+    isEgg: true,
+  });
+  resetIdleTimer(); // 重新启动定时器
 }
 
 // 3. 重置／启动 30 秒无输入定时器
 function resetIdleTimer() {
-  clearTimeout(idleTimer)
-  idleTimer = setTimeout(triggerNoInputEgg, 30 * 1000)
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(triggerNoInputEgg, 130 * 1000);
 }
 
-
-
 function loadVoiceSetting() {
-  const saved = localStorage.getItem(STORAGE_VOICE_KEY)
-  return saved !== null ? JSON.parse(saved) : true
+  const saved = localStorage.getItem(STORAGE_VOICE_KEY);
+  return saved !== null ? JSON.parse(saved) : true;
 }
 
 watch(isVoiceEnabled, (val) => {
   if (isVoiceEnabled) {
-    playVoice('welcome')
+    playVoice("welcome");
   }
-  localStorage.setItem(STORAGE_VOICE_KEY, JSON.stringify(val))
-})
+  localStorage.setItem(STORAGE_VOICE_KEY, JSON.stringify(val));
+});
 
 function playVoice(name: string) {
-  if (!isVoiceEnabled.value) return
-  const audio = new Audio(`/voice/${name}.mp3`)
-  audio.play().catch(e => console.warn('音频播放失败：', e))
+  if (!isVoiceEnabled.value) return;
+  const audio = new Audio(`/voice/${name}.mp3`);
+  audio.play().catch((e) => console.warn("音频播放失败：", e));
 }
 
 async function sendMessage() {
-  if (!input.value.trim()) return
-  resetIdleTimer()
-  const userText = input.value
-  chatLog.value.push({ id: Date.now(), role: 'user', text: md.render(userText) })
-  input.value = ''
-  loading.value = true
-  playVoice('think')
+  if (!input.value.trim()) return;
+  resetIdleTimer();
+  const userText = input.value;
+  chatLog.value.push({
+    id: Date.now(),
+    role: "user",
+    text: md.render(userText),
+  });
+  input.value = "";
+  loading.value = true;
+  playVoice("think");
 
   try {
-    const history = chatLog.value.filter(msg => !msg.isEgg)
-    const botReply = await sendMessageToChatGPT(userText, chatLog.value)
-    chatLog.value.push({ id: Date.now() + 1, role: 'bot', text: md.render(botReply) })
+    const history = chatLog.value.filter((msg) => !msg.isEgg);
+    const botReply = await sendMessageToChatGPT(userText, history);
+    chatLog.value.push({
+      id: Date.now() + 1,
+      role: "bot",
+      text: md.render(botReply),
+    });
+
+    // —— 鼓励彩蛋：30% 概率触发 ——
+    if (Math.random() < 0.3) {
+      // 随机挑一条
+      const egg =
+        encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
+      // 播放对应语音（不带 .mp3 后缀）
+      playVoice(egg.file.replace(".mp3", ""));
+      // 推入带标记的彩蛋消息
+      chatLog.value.push({
+        id: Date.now() + 2,
+        role: "bot",
+        text: `<p style="opacity:.7;color: #ffb3c1;">${egg.text}</p>`,
+        isEgg: true,
+      });
+    }
+    // —— 彩蛋结束 ——
   } catch (e) {
-    console.error(e)
-    playVoice('error')
+    console.error(e);
+    playVoice("error");
     chatLog.value.push({
       id: Date.now() + 2,
-      role: 'bot',
-      text: '对不起，出了点问题，请稍后再试。',
-      isError: true
-    })
+      role: "bot",
+      text: "对不起，出了点问题，请稍后再试。",
+      isError: true,
+    });
   } finally {
-    loading.value = false
-    await scrollToBottom()
+    loading.value = false;
+    await scrollToBottom();
   }
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage()
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendMessage();
 }
 
 function clearChat() {
-  if (confirm('确定要清空全部对话吗？')) {
-    chatLog.value = [{ id: Date.now(), role: 'bot', text: md.render('你好，我是时崎狂三，有什么想知道的吗？') }]
-    localStorage.removeItem(STORAGE_KEY)
-    playVoice('clear')
+  if (confirm("确定要清空全部对话吗？")) {
+    chatLog.value = [
+      {
+        id: Date.now(),
+        role: "bot",
+        text: md.render("你好，我是时崎狂三，有什么想知道的吗？"),
+      },
+    ];
+    localStorage.removeItem(STORAGE_KEY);
+    playVoice("clear");
   }
 }
 
 function loadChatLog(): ChatMsg[] {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved)
+      return JSON.parse(saved);
     } catch (e) {
-      console.error('chatLog 解析失败：', e)
+      console.error("chatLog 解析失败：", e);
     }
   }
-  return [{ id: Date.now(), role: 'bot', text: md.render('你好，我是时崎狂三，有什么想知道的吗？') }]
+  return [
+    {
+      id: Date.now(),
+      role: "bot",
+      text: md.render("你好，我是时崎狂三，有什么想知道的吗？"),
+    },
+  ];
 }
 
 async function scrollToBottom() {
-  await nextTick()
+  await nextTick();
   if (msgList.value) {
-    msgList.value.scrollTop = msgList.value.scrollHeight
+    msgList.value.scrollTop = msgList.value.scrollHeight;
   }
 }
 
-watch(chatLog, async () => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(chatLog.value))
-  await scrollToBottom()
-}, { deep: true })
+watch(
+  chatLog,
+  async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(chatLog.value));
+    await scrollToBottom();
+  },
+  { deep: true }
+);
 
 onMounted(() => {
-  scrollToBottom()
-  resetIdleTimer()
-})
+  scrollToBottom();
+  resetIdleTimer();
+});
 
 onBeforeUnmount(() => {
-  clearTimeout(idleTimer)
-})
-
+  clearTimeout(idleTimer);
+});
 </script>
 
 <style scoped>
@@ -188,7 +251,6 @@ onBeforeUnmount(() => {
 }
 
 @keyframes gradient-flow {
-
   0%,
   100% {
     background-position: 0% 50%;
@@ -239,7 +301,7 @@ onBeforeUnmount(() => {
 }
 
 .avatar.bot {
-  background-image: url('@/assets/images/1 (1).jpg');
+  background-image: url("@/assets/images/1 (1).jpg");
   box-shadow: 0 0 12px #ff0033;
 }
 
@@ -338,5 +400,12 @@ onBeforeUnmount(() => {
     max-width: 80%;
     font-size: 14px;
   }
+}
+
+.egg-text {
+  display: block;
+  opacity: 0.7;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 </style>
