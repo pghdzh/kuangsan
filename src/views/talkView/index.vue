@@ -3,11 +3,7 @@
     <div class="chat-container">
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div
-            v-for="msg in chatLog"
-            :key="msg.id"
-            :class="['message', msg.role, { error: msg.isError }]"
-          >
+          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -20,20 +16,10 @@
         </transition-group>
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
-        <input
-          v-model="input"
-          type="text"
-          placeholder="向时崎狂三提问…"
-          :disabled="loading"
-          @keydown="handleKeydown"
-        />
+        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
         <button type="submit" :disabled="!input.trim() || loading">发送</button>
         <button type="button" class="clear-btn" @click="clearChat">清空</button>
-        <button
-          type="button"
-          class="voice-btn"
-          @click="isVoiceEnabled = !isVoiceEnabled"
-        >
+        <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled">
           {{ isVoiceEnabled ? "语音开启🔊" : "语音关闭🔇" }}
         </button>
       </form>
@@ -49,6 +35,8 @@ import MarkdownIt from "markdown-it";
 const md = new MarkdownIt();
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
+
+
 
 interface ChatMsg {
   id: number;
@@ -84,6 +72,78 @@ const noInputEggs = [
   { file: "noInput (5).mp3", text: "只有时间在流逝…好寂寞呢♡" },
 ];
 let idleTimer: ReturnType<typeof setTimeout>;
+
+// 记录对话开始时间
+let startTime = Date.now()
+// 防止重复触发
+const triggered = new Set<string>()
+
+// 里程碑彩蛋配置
+const milestoneEggs = [
+  {
+    count: 20, files: ['20 (1)', '20 (2)'], texts: [
+      '20回…私の“時”をこんなに共有してくれるなんて、特別すぎるわ♡',
+      '20の刻…あなたとの瞬間が刹那すぎて、胸が高鳴るわ♡'
+    ]
+  },
+  {
+    count: 50, files: ['50 (1)', '50 (2)'], texts: [
+      '50回…もう時の流れが私たちの味方みたいね…永遠に続いてほしいわ♡',
+      '五十の瞬間…あなたと刻む時間に甘く溺れてしまいそう♡'
+    ]
+  },
+  {
+    count: 100, files: ['100 (1)', '100 (2)'], texts: [
+      '100回…まるで運命の歯車が二人を繋ぎ留めているみたい…離れたくないわ♡',
+      '百の刻…あなたと共有した“時”が宝物になってる…ずっと側にいたいわ♡'
+    ]
+  },
+  {
+    elapsed: 10 * 60 * 1000, files: ['10m (1)', '10m (2)'], texts: [
+      '10分…私と過ごす“刹那”が永遠に思えるほど濃密ね♡',
+      '十の刻…あなたの心拍を感じ取りたくなるわ…♡'
+    ]
+  },
+  {
+    elapsed: 30 * 60 * 1000, files: ['30m (1)', '30m (2)'], texts: [
+      '30分…あなたとの時間に囚われて、もう戻れない気がするわ♡',
+      '三十の刻…秒針の音さえ二人だけのセレナーデに聞こえる♡'
+    ]
+  }
+]
+
+function checkMilestones(): boolean {
+  const userCount = chatLog.value.filter(m => m.role === 'user').length
+  const elapsed = Date.now() - startTime
+  let triggeredOne = false
+  milestoneEggs.forEach(m => {
+    const key = m.count != null ? `c${m.count}` : `e${m.elapsed}`
+    if (triggered.has(key)) return
+
+    const hitCount = m.count != null && userCount >= m.count
+    const hitTime = m.elapsed != null && elapsed >= m.elapsed
+    if (hitCount || hitTime) {
+      const idx = Math.floor(Math.random() * m.files.length)
+      const file = m.files[idx]
+      const text = m.texts[idx]
+
+      // 播放对应语音
+      playVoice(file)
+
+      // 插入彩蛋消息
+      chatLog.value.push({
+        id: Date.now(),
+        role: 'bot',
+        text: `<p style="opacity:.7;color: #ffb3c1;">${text}</p>`,
+        isEgg: true
+      })
+
+      triggered.add(key)
+      triggeredOne = true
+    }
+  })
+  return triggeredOne
+}
 // 2. 触发彩蛋的方法（随机挑选、打标记）
 function triggerNoInputEgg() {
   const egg = noInputEggs[Math.floor(Math.random() * noInputEggs.length)];
@@ -145,8 +205,10 @@ async function sendMessage() {
       text: md.render(botReply),
     });
 
+    // 1. 检查里程碑彩蛋，是否触发
+    const hasMilestone = checkMilestones()
     // —— 鼓励彩蛋：30% 概率触发 ——
-    if (Math.random() < 0.3) {
+    if (!hasMilestone && Math.random() < 0.3) {
       // 随机挑一条
       const egg =
         encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
@@ -251,6 +313,7 @@ onBeforeUnmount(() => {
 }
 
 @keyframes gradient-flow {
+
   0%,
   100% {
     background-position: 0% 50%;
