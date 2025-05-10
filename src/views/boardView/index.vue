@@ -1,9 +1,5 @@
 <template>
   <div class="board-page">
-    <header class="header-bar">
-      <h1 class="title">留言板 - 时崎狂三风格</h1>
-    </header>
-
     <!-- 留言列表 -->
     <main class="messages" ref="msgList">
       <transition-group name="fade" tag="div" class="message-list">
@@ -17,75 +13,95 @@
       </transition-group>
 
       <div v-if="loading" class="loading">加载中...</div>
-      <div v-if="!loading && messages.length === 0" class="no-data">暂无留言，快来抢沙发！</div>
+      <div v-if="!loading && messages.length === 0" class="no-data">
+        暂无留言，快来抢沙发！
+      </div>
     </main>
 
     <!-- 底部输入区 -->
     <footer class="input-area">
       <div class="input-wrapper">
-        <input v-model="nickname" type="text" placeholder="你的昵称…" :disabled="submitting" />
-        <textarea v-model="input" placeholder="留下你的心声…" :disabled="submitting"></textarea>
-        <button @click.prevent="postMessage" :disabled="!canSubmit" class="btn-submit">送信</button>
+        <input
+          v-model="nickname"
+          type="text"
+          placeholder="你的昵称…"
+          :disabled="submitting"
+        />
+        <textarea
+          v-model="input"
+          placeholder="留下你的心声…"
+          :disabled="submitting"
+        ></textarea>
+        <button
+          @click.prevent="postMessage"
+          :disabled="!canSubmit"
+          class="btn-submit"
+        >
+          送信
+        </button>
       </div>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
-import MarkdownIt from 'markdown-it'
-import { getMessageList, createMessage } from '@/api/modules/message'
+import { ref, onMounted, nextTick, computed } from "vue";
+import MarkdownIt from "markdown-it";
+import { getMessageList, createMessage } from "@/api/modules/message";
 
-const md = new MarkdownIt()
-const messages = ref<any[]>([])
-const nickname = ref('')
-const input = ref('')
-const loading = ref(false)
-const submitting = ref(false)
-const msgList = ref<HTMLElement>()
-
-const CHARACTER_KEY = 'kyouko' // 当前角色标识，可动态替换
+const md = new MarkdownIt();
+const messages = ref<any[]>([]);
+const nickname = ref("");
+const input = ref("");
+const loading = ref(false);
+const submitting = ref(false);
+const msgList = ref<HTMLElement>();
 
 const loadMessages = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getMessageList({ page: 1, pageSize: 100, character_key: CHARACTER_KEY })
+    const res = await getMessageList({ page: 1, pageSize: 100 });
     if (res.success) {
-      messages.value = res.data.reverse() // 最新在底部
-      await scrollBottom()
+      messages.value = res.data.reverse(); // 最新在底部
+      await scrollBottom();
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 function formatTime(ts: string) {
-  return new Date(ts).toLocaleString('ja-JP', { hour12: false })
+  return new Date(ts).toLocaleString("ja-JP", { hour12: false });
 }
 
 async function postMessage() {
-  if (!canSubmit.value) return
-  submitting.value = true
+  if (!canSubmit.value) return;
+  submitting.value = true;
   try {
-    const res = await createMessage({ name: nickname.value.trim(), content: input.value, character_key: CHARACTER_KEY })
+    const res = await createMessage({
+      name: nickname.value.trim(),
+      content: input.value,
+    });
     if (res.success) {
-      nickname.value = ''
-      input.value = ''
-      await loadMessages()
+      nickname.value = "";
+      input.value = "";
+      await loadMessages();
     }
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 async function scrollBottom() {
-  await nextTick()
-  if (msgList.value) msgList.value.scrollTop = msgList.value.scrollHeight
+  await nextTick();
+  if (msgList.value) msgList.value.scrollTop = msgList.value.scrollHeight;
 }
 
-const canSubmit = computed(() => !!nickname.value.trim() && !!input.value.trim() && !submitting.value)
+const canSubmit = computed(
+  () => !!nickname.value.trim() && !!input.value.trim() && !submitting.value
+);
 
-onMounted(loadMessages)
+onMounted(loadMessages);
 </script>
 
 <style scoped>
@@ -93,9 +109,10 @@ onMounted(loadMessages)
   display: flex;
   flex-direction: column;
   height: 100vh;
+  padding-top: 64px;
   background: linear-gradient(135deg, #1b091b, #2e0f2e);
   color: #f0f0f0;
-  font-family: 'Creepster', sans-serif;
+  font-family: "Creepster", sans-serif;
 }
 .header-bar {
   position: sticky;
@@ -124,11 +141,11 @@ onMounted(loadMessages)
   margin: 0 auto;
 }
 .message-card {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-left: 4px solid #ff79c6;
   padding: 16px;
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   transition: transform 0.3s;
 }
 .message-card:hover {
@@ -148,8 +165,8 @@ onMounted(loadMessages)
   opacity: 0.7;
 }
 .msg-content {
-  background: rgba(255,0,51,0.1);
-  border: 1px solid rgba(255,0,51,0.4);
+  background: rgba(255, 0, 51, 0.1);
+  border: 1px solid rgba(255, 0, 51, 0.4);
   backdrop-filter: blur(4px);
   padding: 12px;
   border-radius: 8px;
@@ -164,7 +181,7 @@ onMounted(loadMessages)
 }
 .input-area {
   padding: 12px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
 }
 .input-wrapper {
@@ -179,14 +196,18 @@ onMounted(loadMessages)
   width: 100%;
   padding: 14px;
   font-size: 1rem;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   border: 1px solid #4d002f;
   color: #f0f0f0;
   border-radius: 8px;
   resize: none;
 }
-.input-wrapper input { height: 40px; }
-.input-wrapper textarea { height: 100px; }
+.input-wrapper input {
+  height: 40px;
+}
+.input-wrapper textarea {
+  height: 100px;
+}
 .btn-submit {
   align-self: center;
   padding: 12px 36px;
@@ -195,7 +216,7 @@ onMounted(loadMessages)
   background: linear-gradient(90deg, #ff79c6, #ff5fa1);
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
   transition: background 0.3s, transform 0.2s;
 }
 .btn-submit:disabled {
