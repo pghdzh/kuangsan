@@ -8,49 +8,71 @@
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn">角色概览</router-link>
+          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
         </div>
+
       </div>
+      <!-- 时钟齿轮装饰 -->
+      <div class="gear-deco gear1"></div>
+      <div class="gear-deco gear2"></div>
     </section>
+
+    <!-- 页脚波浪 -->
+    <footer class="footer-wave-3">
+      <svg class="wave wave1" viewBox="0 0 1200 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ff4f4f" />
+            <stop offset="100%" stop-color="#800000" />
+          </linearGradient>
+        </defs>
+        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
+      </svg>
+      <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
+        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
+      </svg>
+      <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
+        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
+      </svg>
+    </footer>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import rose from '@/assets/rose.png'
-// Canvas 引用
+
 const canvasEl = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D
 let animationId: number
 let lastTime = 0
 let elapsed = 0
 
-// 玫瑰粒子接口，包含摆动参数
 interface Rose {
-  baseX: number      // 初始水平位置
-  y: number          // 垂直位置
-  size: number       // 大小
-  speed: number      // 垂直速度
-  swayAmp: number    // 摆动振幅
-  swayFreq: number   // 摆动频率
-  phase: number      // 摆动相位
-  angle: number      // 旋转角度
-  angularSpeed: number // 旋转速度
+  baseX: number
+  y: number
+  size: number
+  speed: number
+  swayAmp: number
+  swayFreq: number
+  phase: number
+  angle: number
+  angularSpeed: number
 }
 
 const roses: Rose[] = []
-const ROSE_COUNT = 20
+const ROSE_COUNT_DESKTOP = 20
+const ROSE_COUNT_MOBILE = 8
 const ROSE_IMG = new Image()
 ROSE_IMG.src = rose
 
-// 初始化粒子数组，设置每个属性
-function initRoses() {
+function initRoses(count: number) {
   roses.length = 0
   const canvas = canvasEl.value!
   const w = canvas.width / (window.devicePixelRatio || 1)
   const h = canvas.height / (window.devicePixelRatio || 1)
 
-  for (let i = 0; i < ROSE_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const baseX = Math.random() * w
     roses.push({
       baseX,
@@ -58,7 +80,7 @@ function initRoses() {
       size: 30 + Math.random() * 40,
       speed: 30 + Math.random() * 70,
       swayAmp: 20 + Math.random() * 20,
-      swayFreq: 0.5 + Math.random() * 1, // 频率 0.5~1.5
+      swayFreq: 0.5 + Math.random() * 1,
       phase: Math.random() * Math.PI * 2,
       angle: Math.random() * Math.PI * 2,
       angularSpeed: (Math.random() - 0.5) * 2
@@ -67,23 +89,32 @@ function initRoses() {
   elapsed = 0
 }
 
-// 画布尺寸自适应（支持高清屏）
+let resizeTimeout: number
 function resizeCanvas() {
-  const canvas = canvasEl.value!
-  const parent = canvas.parentElement!
-  const dpr = window.devicePixelRatio || 1
-  const w = parent.clientWidth
-  const h = parent.clientHeight
+  window.clearTimeout(resizeTimeout)
+  resizeTimeout = window.setTimeout(() => {
+    cancelAnimationFrame(animationId)
+    const canvas = canvasEl.value!
+    const parent = canvas.parentElement!
+    const dpr = window.devicePixelRatio || 1
+    const w = parent.clientWidth
+    const h = parent.clientHeight
 
-  canvas.style.width = w + 'px'
-  canvas.style.height = h + 'px'
-  canvas.width = w * dpr
-  canvas.height = h * dpr
+    canvas.style.width = w + 'px'
+    canvas.style.height = h + 'px'
+    canvas.width = w * dpr
+    canvas.height = h * dpr
 
-  ctx.scale(dpr, dpr)
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.scale(dpr, dpr)
+
+    const isMobile = w < 768
+    initRoses(isMobile ? ROSE_COUNT_MOBILE : ROSE_COUNT_DESKTOP)
+    lastTime = 0
+    animationId = requestAnimationFrame(tick)
+  }, 200)
 }
 
-// 帧循环，使用性能时间戳精确计算 dt
 function tick(now: number) {
   if (!lastTime) lastTime = now
   const dt = (now - lastTime) / 1000
@@ -94,32 +125,22 @@ function tick(now: number) {
   const w = canvas.clientWidth
   const h = canvas.clientHeight
 
-  // 清空画布
   ctx.clearRect(0, 0, w, h)
 
   roses.forEach(r => {
-    // 垂直下落
     r.y += r.speed * dt
-
-    // 水平正弦摆动
     const sway = r.swayAmp * Math.sin(r.phase + elapsed * r.swayFreq)
     const x = r.baseX + sway
-
-    // 旋转更新
     r.angle += r.angularSpeed * dt
 
-    // 重置到底部
     if (r.y > h + r.size) {
       r.y = -r.size
       r.baseX = Math.random() * w
       r.phase = Math.random() * Math.PI * 2
     }
 
-    // 水平环绕
-    if (x > w + r.size) return // 超出右侧不渲染
-    if (x < -r.size) return     // 超出左侧不渲染
+    if (x > w + r.size || x < -r.size) return
 
-    // 绘制旋转后的玫瑰
     ctx.save()
     ctx.translate(x, r.y)
     ctx.rotate(r.angle)
@@ -134,20 +155,10 @@ onMounted(() => {
   const canvas = canvasEl.value!
   ctx = canvas.getContext('2d')!
 
-  // 图片加载后初始化并启动动画
   ROSE_IMG.onload = () => {
     resizeCanvas()
-    initRoses()
-    animationId = requestAnimationFrame(tick)
   }
-
-  window.addEventListener('resize', () => {
-    cancelAnimationFrame(animationId)
-    resizeCanvas()
-    initRoses()
-    lastTime = 0
-    animationId = requestAnimationFrame(tick)
-  })
+  window.addEventListener('resize', resizeCanvas)
 })
 
 onBeforeUnmount(() => {
@@ -155,7 +166,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCanvas)
 })
 </script>
-
 
 <style lang="scss" scoped>
 .home-container {
@@ -176,17 +186,20 @@ onBeforeUnmount(() => {
     .hero-overlay {
       position: relative;
       z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       width: 100%;
       height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
 
       .hero-text {
-        max-width: 50%;
+        max-width: 800px;
+        width: 50%;
+        text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -201,11 +214,22 @@ onBeforeUnmount(() => {
           margin: 16px 0;
           font-style: italic;
           color: #f8dcdc;
+          position: relative;
+
+          &::after {
+            content: "";
+            display: block;
+            width: 60px;
+            height: 2px;
+            margin: 12px auto 0;
+            background: linear-gradient(90deg, rgba(232, 190, 190, 0), rgba(232, 190, 190, 1));
+          }
         }
 
         .btn {
           display: inline-block;
           padding: 10px 30px;
+          margin-top: 16px;
           font-family: "Cinzel Sans", sans-serif;
           font-size: 1rem;
           background: transparent;
@@ -213,26 +237,119 @@ onBeforeUnmount(() => {
           border-radius: 50px;
           text-decoration: none;
           color: #d14b4b;
-          transition: background 0.3s, color 0.3s;
+          transition: background 0.3s, color 0.3s, box-shadow 0.3s;
 
           &:hover {
             background: #d14b4b;
             color: #1b1b1b;
+            box-shadow: 0 0 8px rgba(213, 75, 75, 0.7);
+          }
+
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(209, 75, 75, 0.5);
           }
         }
       }
+
+
+    }
+
+    .gear-deco {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      pointer-events: none;
+
+      &.gear1 {
+        width: 200px;
+        height: 200px;
+        top: 10%;
+        left: 5%;
+      }
+
+      &.gear2 {
+        width: 150px;
+        height: 150px;
+        bottom: 15%;
+        right: 10%;
+      }
+    }
+  }
+
+  .footer-wave-3 {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    margin-top: -125px;
+    overflow: hidden;
+
+    .wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 100%;
+      transform: translateX(0);
+    }
+
+    .wave1 {
+      animation: waveMove 16s linear infinite;
+      z-index: 1;
+    }
+
+    .wave2 {
+      animation: waveMove 24s linear infinite;
+      z-index: 2;
+      animation-delay: -4s;
+    }
+
+    .wave3 {
+      animation: waveMove 32s linear infinite;
+      z-index: 3;
+      animation-delay: -8s;
+    }
+  }
+
+  @keyframes waveMove {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes fadeInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes arrowBounce {
+
+    0%,
+    100% {
+      transform: translateY(0) rotate(-45deg);
+    }
+
+    50% {
+      transform: translateY(-10px) rotate(-45deg);
     }
   }
 }
 
-@keyframes fadeInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+/* 小屏适配 */
+@media (max-width: 767px) {
+  .home-container .hero .hero-overlay .hero-text {
+    width: 80%;
   }
 }
 </style>
