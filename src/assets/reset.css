@@ -135,7 +135,7 @@ table {
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
-  width: 0px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {

@@ -1,5 +1,15 @@
 <template>
   <div class="chat-page">
+       <!-- 背景轮播放在最底层 -->
+       <div class="carousel">
+      <img
+        v-for="(src, idx) in randomFive"
+        :key="idx"
+        :src="src"
+        class="carousel-image"
+        :class="{ active: idx === currentIndex }"
+      />
+    </div>
     <div class="chat-container">
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
@@ -28,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch, onBeforeUnmount } from "vue";
+import { ref, onMounted, nextTick, watch, onBeforeUnmount,onUnmounted } from "vue";
 import { sendMessageToChatGPT } from "@/api/opaiApi";
 import MarkdownIt from "markdown-it";
 
@@ -36,7 +46,25 @@ const md = new MarkdownIt();
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
 
+// 1. 全量导入，直接映射成 string[]
+const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg}", {
+  eager: true,
+});
+const allSrcs: string[] = Object.values(modules).map((mod: any) => mod.default);
 
+// 2. 洗牌并取 5 张
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const randomFive = ref<string[]>(shuffle(allSrcs).slice(0, 5));
+
+const currentIndex = ref(0);
+let timer: number;
 
 interface ChatMsg {
   id: number;
@@ -162,7 +190,7 @@ function triggerNoInputEgg() {
 // 3. 重置／启动 30 秒无输入定时器
 function resetIdleTimer() {
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(triggerNoInputEgg, 33 * 1000);
+  idleTimer = setTimeout(triggerNoInputEgg, 60 * 1000);
 }
 
 function loadVoiceSetting() {
@@ -290,17 +318,26 @@ watch(
   { deep: true }
 );
 
-onMounted(() => {
-  scrollToBottom();
-  resetIdleTimer();
-});
 
 onBeforeUnmount(() => {
   clearTimeout(idleTimer);
 });
+
+onMounted(() => {
+  scrollToBottom();
+  resetIdleTimer();
+  // 2. 每 5 秒切换一次
+  timer = window.setInterval(() => {
+    currentIndex.value = (currentIndex.value + 1) % randomFive.value.length;
+  }, 10000);
+});
+
+onUnmounted(() => {
+  clearInterval(timer);
+});
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .chat-page {
   padding-top: 64px;
   height: 100vh;
@@ -310,6 +347,36 @@ onBeforeUnmount(() => {
   color: #fff;
   display: flex;
   flex-direction: column;
+  .carousel {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    /* 放在最底层 */
+    /* 叠加所有图片，通过 opacity 实现切换 */
+    .carousel-image {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1s ease;
+      filter: blur(1px); /* 轻微模糊 */
+    }
+
+    .carousel-image.active {
+      opacity: 1;
+    }
+  }
+  /* 遮罩层 */
+  .carousel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5); /* 遮罩透明度可调 */
+    pointer-events: none;
+    z-index: 1;
+  }
 }
 
 @keyframes gradient-flow {
@@ -328,7 +395,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 800px;
+  width: 800px;
   margin: 0 auto;
   padding: 16px;
   gap: 12px;
@@ -339,8 +406,9 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 100px;
-  scroll-behavior: smooth;
   padding-top: 10px;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
 }
 
 .message {
@@ -361,10 +429,11 @@ onBeforeUnmount(() => {
   background-size: cover;
   flex-shrink: 0;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  z-index: 10;
 }
 
 .avatar.bot {
-  background-image: url("@/assets/images/2 (2).jpg");
+  background-image: url("@/assets/images2/2 (2).jpg");
   box-shadow: 0 0 12px #ff0033;
 }
 
