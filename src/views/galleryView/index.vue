@@ -1,21 +1,11 @@
 <template>
   <div class="gallery-container">
+    <button class="upload-btn" @click="openUploadModal">上传图片</button>
     <section class="gallery section">
       <div class="gallery-grid">
-        <div
-          v-for="(img, index) in images"
-          :key="index"
-          class="card"
-          @click="openLightbox(index)"
-          ref="cards"
-        >
+        <div v-for="(img, index) in images" :key="index" class="card" @click="openLightbox(index)" ref="cards">
           <div class="card-inner">
-            <img
-              :src="img.src"
-              :alt="img.alt"
-              loading="lazy"
-              @load="onImageLoad($event)"
-            />
+            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
             <div class="overlay">
               <span>查看大图</span>
             </div>
@@ -31,11 +21,38 @@
       <img :src="images[currentIndex].src" :alt="images[currentIndex].alt" />
       <span class="next" @click.stop="nextImage">›</span>
     </div>
+
+    <!-- 上传弹窗 -->
+    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
+      <div class="upload-modal">
+        <h3>批量上传图片</h3>
+        <p class="stats">
+          今日已上传：<strong>{{ uploadedToday }}</strong> 张，
+          剩余可上传：<strong>{{ remaining }}</strong> 张
+        </p>
+        <label>
+          昵称：
+          <input v-model="nickname" type="text" placeholder="请输入昵称" />
+        </label>
+        <label>
+          选择图片（最多 {{ remaining }} 张）：
+          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
+        </label>
+        <p class="tip" v-if="selectedFiles.length">
+          已选 {{ selectedFiles.length }} 张
+        </p>
+        <div class="modal-actions">
+          <button :disabled="!canSubmit" @click="submitUpload">提交</button>
+          <button class="cancel" @click="closeUploadModal">取消</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { uploadImages } from "@/api/modules/images";  // 前面封装的上传接口
 
 interface ImageItem {
   src: string;
@@ -103,6 +120,71 @@ onMounted(() => {
     observer.observe(el);
   });
 });
+// 上传弹窗逻辑
+
+const uploadModalOpen = ref(false);
+const nickname = ref('');
+const fileInput = ref<HTMLInputElement>();
+const selectedFiles = ref<File[]>([]);
+
+// 从 localStorage 读取“今天”已上传数量
+function getTodayKey() {
+  return `uploaded_${new Date().toISOString().slice(0, 10)}`;
+}
+const uploadedToday = ref<number>(
+  Number(localStorage.getItem(getTodayKey()) || 0)
+);
+const remaining = computed(() => Math.max(20 - uploadedToday.value, 0));
+
+// 控制提交按钮
+const canSubmit = computed(() => {
+  return (
+    nickname.value.trim().length > 0 &&
+    selectedFiles.value.length > 0 &&
+    selectedFiles.value.length <= remaining.value
+  );
+});
+
+function openUploadModal() {
+  nickname.value = '';
+  selectedFiles.value = [];
+  if (fileInput.value) fileInput.value.value = '';
+  // 每次打开重新刷新已上传数
+  uploadedToday.value = Number(localStorage.getItem(getTodayKey()) || 0);
+  uploadModalOpen.value = true;
+}
+function closeUploadModal() {
+  uploadModalOpen.value = false;
+}
+
+// 本地截断到剩余数量
+function handleFileSelect(e: Event) {
+  const files = Array.from((e.target as HTMLInputElement).files || []);
+  if (files.length > remaining.value) {
+    alert(`今天最多还能上传 ${remaining.value} 张，已为你截取前 ${remaining.value} 张`);
+    selectedFiles.value = files.slice(0, remaining.value);
+  } else {
+    selectedFiles.value = files;
+  }
+}
+
+async function submitUpload() {
+  if (!canSubmit.value) return;
+  try {
+    const res = await uploadImages(selectedFiles.value, nickname.value.trim());
+    const uploadedCount = res.data.length;
+    // 更新 localStorage
+    uploadedToday.value += uploadedCount;
+    localStorage.setItem(getTodayKey(), String(uploadedToday.value));
+
+    alert(`成功上传 ${uploadedCount} 张图片`);
+    closeUploadModal();
+    // …可选：刷新画廊列表或把新图片追加到 images …
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || '上传失败');
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -116,6 +198,7 @@ $highlight: #ffd700;
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -142,10 +225,13 @@ $highlight: #ffd700;
         perspective: 1000px;
         opacity: 0;
         transform: translateY(20px);
+
         &.visible {
           animation: fadeInUp 0.6s ease forwards;
         }
+
         &.loaded {
+
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -245,15 +331,149 @@ $highlight: #ffd700;
       top: 20px;
       right: 20px;
     }
+
     .prev {
       left: 20px;
       top: 50%;
       transform: translateY(-50%);
     }
+
     .next {
       right: 20px;
       top: 50%;
       transform: translateY(-50%);
+    }
+  }
+
+
+  /* 上传按钮 */
+  .upload-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 24px;
+    background: #d14b4b;
+    color: #fde8e8;
+    font-size: 1rem;
+    border: none;
+    border-radius: 28px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+
+    &:hover {
+      transform: scale(1.08);
+      background: #ffd700;
+      color: #111;
+    }
+  }
+
+  /* 上传弹窗遮罩 */
+  .upload-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  /* 弹窗主体 */
+  .upload-modal {
+    background: #1a1a1a;
+    padding: 32px;
+    border-radius: 12px;
+    width: 360px;
+    color: #fde8e8;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    position: relative;
+
+    .stats {
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+
+      strong {
+        color: #d14b4b;
+      }
+    }
+
+    .tip {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #ffd700;
+      text-align: right;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: 1.4rem;
+      color: #ffd700;
+    }
+
+    .remaining {
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+
+      strong {
+        color: #d14b4b;
+        font-size: 1.1rem;
+      }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+
+      input[type="text"],
+      input[type="file"] {
+        width: 100%;
+        margin-top: 6px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        background: #111;
+        color: #fde8e8;
+      }
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 22px;
+        cursor: pointer;
+        background: #d14b4b;
+        color: #fde8e8;
+        font-weight: bold;
+        transition: background 0.3s;
+
+        &:hover:not(:disabled) {
+          background: #ffd700;
+          color: #111;
+        }
+
+        &:disabled {
+          background: #555;
+          cursor: not-allowed;
+        }
+      }
+
+      .cancel {
+        background: transparent;
+        border: 2px solid #fde8e8;
+        color: #fde8e8;
+
+        &:hover {
+          background: rgba(255, 215, 0, 0.2);
+        }
+      }
     }
   }
 }
