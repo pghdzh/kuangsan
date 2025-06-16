@@ -1,7 +1,7 @@
 <template>
   <div class="chat-page">
-       <!-- 背景轮播放在最底层 -->
-       <div class="carousel">
+    <!-- 背景轮播放在最底层 -->
+    <div class="carousel">
       <img
         v-for="(src, idx) in randomFive"
         :key="idx"
@@ -13,7 +13,11 @@
     <div class="chat-container">
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
+          <div
+            v-for="msg in chatLog"
+            :key="msg.id"
+            :class="['message', msg.role, { error: msg.isError }]"
+          >
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -21,15 +25,32 @@
           </div>
           <div v-if="loading" class="message bot" key="loading">
             <div class="avatar bot"></div>
-            <div class="bubble loading">正在思考中</div>
+            <div class="bubble loading">
+              正在思考中
+              <span class="dots">
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+              </span>
+            </div>
           </div>
         </transition-group>
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
-        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="向时崎狂三提问…"
+          :disabled="loading"
+          @keydown="handleKeydown"
+        />
         <button type="submit" :disabled="!input.trim() || loading">发送</button>
         <button type="button" class="clear-btn" @click="clearChat">清空</button>
-        <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled">
+        <button
+          type="button"
+          class="voice-btn"
+          @click="isVoiceEnabled = !isVoiceEnabled"
+        >
           {{ isVoiceEnabled ? "语音开启🔊" : "语音关闭🔇" }}
         </button>
       </form>
@@ -38,8 +59,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch, onBeforeUnmount,onUnmounted } from "vue";
-import { sendMessageToChatGPT } from "@/api/opaiApi";
+import {
+  ref,
+  onMounted,
+  nextTick,
+  watch,
+  onBeforeUnmount,
+  onUnmounted,
+} from "vue";
+import { sendMessageToKurumi } from "@/api/deepseekApi";
 import MarkdownIt from "markdown-it";
 
 const md = new MarkdownIt();
@@ -102,75 +130,85 @@ const noInputEggs = [
 let idleTimer: ReturnType<typeof setTimeout>;
 
 // 记录对话开始时间
-let startTime = Date.now()
+let startTime = Date.now();
 // 防止重复触发
-const triggered = new Set<string>()
+const triggered = new Set<string>();
 
 // 里程碑彩蛋配置
 const milestoneEggs = [
   {
-    count: 20, files: ['20 (1)', '20 (2)'], texts: [
-      '二十个刻度…和你的每个瞬间都转瞬即逝，心都快跳出来了♡',
-      '20次了…你竟然和我共享了这么多‘时间’，真是太特别了♡'
-    ]
+    count: 20,
+    files: ["20 (1)", "20 (2)"],
+    texts: [
+      "二十个刻度…和你的每个瞬间都转瞬即逝，心都快跳出来了♡",
+      "20次了…你竟然和我共享了这么多‘时间’，真是太特别了♡",
+    ],
   },
   {
-    count: 50, files: ['50 (1)', '50 (2)'], texts: [
-      '五十个瞬间…仿佛要沉溺在和你共度的时光里♡',
-      '50次了…仿佛时间都站在我们这边…希望能永远持续下去♡'
-    ]
+    count: 50,
+    files: ["50 (1)", "50 (2)"],
+    texts: [
+      "五十个瞬间…仿佛要沉溺在和你共度的时光里♡",
+      "50次了…仿佛时间都站在我们这边…希望能永远持续下去♡",
+    ],
   },
   {
-    count: 100, files: ['100 (1)', '100 (2)'], texts: [
-      '百个刻度…和你共享的‘时间’都已成了珍宝…我想一直待在你身边♡',
-      '100次了…就像命运的齿轮锁住了我们…我不想分开♡'
-    ]
+    count: 100,
+    files: ["100 (1)", "100 (2)"],
+    texts: [
+      "百个刻度…和你共享的‘时间’都已成了珍宝…我想一直待在你身边♡",
+      "100次了…就像命运的齿轮锁住了我们…我不想分开♡",
+    ],
   },
   {
-    elapsed: 10 * 60 * 1000, files: ['10m (1)', '10m (2)'], texts: [
-      '十个刻度…我想感受你的心跳…♡',
-      '10分钟…和我共度的‘刹那’竟如此浓密，仿佛永恒♡'
-    ]
+    elapsed: 10 * 60 * 1000,
+    files: ["10m (1)", "10m (2)"],
+    texts: [
+      "十个刻度…我想感受你的心跳…♡",
+      "10分钟…和我共度的‘刹那’竟如此浓密，仿佛永恒♡",
+    ],
   },
   {
-    elapsed: 30 * 60 * 1000, files: ['30m (1)', '30m (2)'], texts: [
-      '30分钟…被与你的时光禁锢，似乎再也回不去了♡',
-      '三十个刻度…连秒针声都成了只属于我们的小夜曲♡'
-    ]
-  }
-]
+    elapsed: 30 * 60 * 1000,
+    files: ["30m (1)", "30m (2)"],
+    texts: [
+      "30分钟…被与你的时光禁锢，似乎再也回不去了♡",
+      "三十个刻度…连秒针声都成了只属于我们的小夜曲♡",
+    ],
+  },
+];
 
 function checkMilestones(): boolean {
-  const userCount = chatLog.value.filter(m => m.role === 'user').length
-  const elapsed = Date.now() - startTime
-  let triggeredOne = false
-  milestoneEggs.forEach(m => {
-    const key = m.count != null ? `c${m.count}` : `e${m.elapsed}`
-    if (triggered.has(key)) return
+  const userCount = chatLog.value.filter((m) => m.role === "user").length;
+  const elapsed = Date.now() - startTime;
+  let triggeredOne = false;
+  milestoneEggs.forEach((m) => {
+    const key = m.count != null ? `c${m.count}` : `e${m.elapsed}`;
+    if (triggered.has(key)) return;
 
-    const hitCount = m.count != null && userCount >= m.count
-    const hitTime = m.elapsed != null && elapsed >= m.elapsed
+    const hitCount = m.count != null && userCount >= m.count;
+    const hitTime = m.elapsed != null && elapsed >= m.elapsed;
     if (hitCount || hitTime) {
-      const idx = Math.floor(Math.random() * m.files.length)
-      const file = m.files[idx]
-      const text = m.texts[idx]
+      const idx = Math.floor(Math.random() * m.files.length);
+      const file = m.files[idx];
+      const text = m.texts[idx];
 
       // 播放对应语音
-      playVoice(file)
+      playVoice(file);
 
       // 插入彩蛋消息
       chatLog.value.push({
         id: Date.now(),
-        role: 'bot',
+        role: "bot",
         text: `<p style="opacity:.7;color: #ffb3c1;">${text}</p>`,
-        isEgg: true
-      })
+        isEgg: true,
+      });
 
-      triggered.add(key)
-      triggeredOne = true
+      triggered.add(key);
+      triggeredOne = true;
     }
-  })
-  return triggeredOne
+  });
+  return triggeredOne;
 }
 // 2. 触发彩蛋的方法（随机挑选、打标记）
 function triggerNoInputEgg() {
@@ -226,7 +264,7 @@ async function sendMessage() {
 
   try {
     const history = chatLog.value.filter((msg) => !msg.isEgg);
-    const botReply = await sendMessageToChatGPT(userText, history);
+    const botReply = await sendMessageToKurumi(userText, history);
     chatLog.value.push({
       id: Date.now() + 1,
       role: "bot",
@@ -234,7 +272,7 @@ async function sendMessage() {
     });
 
     // 1. 检查里程碑彩蛋，是否触发
-    const hasMilestone = checkMilestones()
+    const hasMilestone = checkMilestones();
     // —— 鼓励彩蛋：30% 概率触发 ——
     if (!hasMilestone && Math.random() < 0.3) {
       // 随机挑一条
@@ -318,7 +356,6 @@ watch(
   { deep: true }
 );
 
-
 onBeforeUnmount(() => {
   clearTimeout(idleTimer);
 });
@@ -380,7 +417,6 @@ onUnmounted(() => {
 }
 
 @keyframes gradient-flow {
-
   0%,
   100% {
     background-position: 0% 50%;
@@ -452,7 +488,35 @@ onUnmounted(() => {
   word-break: break-word;
   box-shadow: 0 0 8px rgba(255, 0, 51, 0.3);
 }
+.dots {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+.dot {
+  opacity: 0;
+  font-size: 16px;
+  animation: blink 1s infinite;
+}
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 .message.bot .bubble {
   border-radius: 16px 16px 16px 4px;
 }
@@ -539,5 +603,41 @@ onUnmounted(() => {
   opacity: 0.7;
   font-size: 0.9rem;
   margin-top: 0.5rem;
+}
+/* 移动端适配（≤768px） */
+@media (max-width: 768px) {
+  /* 容器宽度调整为全屏 */
+  .chat-container {
+    width: 100%;
+    margin: 0;
+    padding: 8px;
+  }
+
+  /* 聊天气泡减小内边距、字体稍小 */
+  .bubble {
+    padding: 8px 12px;
+    font-size: 14px;
+    max-width: 85%;
+  }
+
+  /* 头像再缩小一点 */
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* 输入区纵向排列，按钮全宽 */
+  .input-area {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .input-area button {
+    width: 100%;
+  }
+
+  /* 隐藏背景轮播，减少流量和渲染开销 */
+  .carousel {
+    display: none;
+  }
 }
 </style>

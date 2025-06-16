@@ -43,12 +43,12 @@ interface ImageItem {
 }
 
 // 自动导入 assets/gallery 下所有图片
-const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif}", {
+const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif,webp}", {
   eager: true,
   query: "?url",
   import: "default",
 });
-const modules2 = import.meta.glob("@/assets/images2/*.{jpg,jpeg,png,gif}", {
+const modules2 = import.meta.glob("@/assets/images2/*.{jpg,jpeg,png,gif,webp}", {
   eager: true,
   query: "?url",
   import: "default",
