@@ -256,7 +256,7 @@ async function sendMessage() {
   chatLog.value.push({
     id: Date.now(),
     role: "user",
-    text: md.render(userText),
+    text: userText,
   });
   input.value = "";
   loading.value = true;

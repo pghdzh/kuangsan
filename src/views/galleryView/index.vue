@@ -3,9 +3,20 @@
     <button class="upload-btn" @click="openUploadModal">上传图片</button>
     <section class="gallery section">
       <div class="gallery-grid">
-        <div v-for="(img, index) in images" :key="index" class="card" @click="openLightbox(index)" ref="cards">
+        <div
+          v-for="(img, index) in images"
+          :key="index"
+          class="card"
+          @click="openLightbox(index)"
+          ref="cards"
+        >
           <div class="card-inner">
-            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
+            <img
+              :src="img.src"
+              :alt="img.alt"
+              loading="lazy"
+              @load="onImageLoad($event)"
+            />
             <div class="overlay">
               <span>查看大图</span>
             </div>
@@ -23,7 +34,11 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
+    <div
+      v-if="uploadModalOpen"
+      class="upload-modal-overlay"
+      @click.self="closeUploadModal"
+    >
       <div class="upload-modal">
         <h3>批量上传图片</h3>
         <p class="stats">
@@ -36,13 +51,21 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
+          <input
+            ref="fileInput"
+            type="file"
+            multiple
+            accept="image/*"
+            @change="handleFileSelect"
+          />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
         </p>
         <div class="modal-actions">
-          <button :disabled="!canSubmit" @click="submitUpload">提交</button>
+          <button :disabled="!canSubmit || isUploading" @click="submitUpload">
+            {{ isUploading ? "上传中..." : "立即上传" }}
+          </button>
           <button class="cancel" @click="closeUploadModal">取消</button>
         </div>
       </div>
@@ -52,7 +75,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from "vue";
-import { uploadImages } from "@/api/modules/images";  // 前面封装的上传接口
+import { uploadImages } from "@/api/modules/images"; // 前面封装的上传接口
 
 interface ImageItem {
   src: string;
@@ -65,11 +88,14 @@ const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif,webp}", {
   query: "?url",
   import: "default",
 });
-const modules2 = import.meta.glob("@/assets/images2/*.{jpg,jpeg,png,gif,webp}", {
-  eager: true,
-  query: "?url",
-  import: "default",
-});
+const modules2 = import.meta.glob(
+  "@/assets/images2/*.{jpg,jpeg,png,gif,webp}",
+  {
+    eager: true,
+    query: "?url",
+    import: "default",
+  }
+);
 
 // 合并两个模块对象
 const mergedModules = { ...modules1, ...modules2 };
@@ -123,7 +149,7 @@ onMounted(() => {
 // 上传弹窗逻辑
 
 const uploadModalOpen = ref(false);
-const nickname = ref('');
+const nickname = ref("");
 const fileInput = ref<HTMLInputElement>();
 const selectedFiles = ref<File[]>([]);
 
@@ -146,9 +172,9 @@ const canSubmit = computed(() => {
 });
 
 function openUploadModal() {
-  nickname.value = '';
+  nickname.value = "";
   selectedFiles.value = [];
-  if (fileInput.value) fileInput.value.value = '';
+  if (fileInput.value) fileInput.value.value = "";
   // 每次打开重新刷新已上传数
   uploadedToday.value = Number(localStorage.getItem(getTodayKey()) || 0);
   uploadModalOpen.value = true;
@@ -160,16 +186,33 @@ function closeUploadModal() {
 // 本地截断到剩余数量
 function handleFileSelect(e: Event) {
   const files = Array.from((e.target as HTMLInputElement).files || []);
-  if (files.length > remaining.value) {
-    alert(`今天最多还能上传 ${remaining.value} 张，已为你截取前 ${remaining.value} 张`);
+
+  if (!files) return;
+
+  const validFiles: File[] = [];
+  for (const file of files) {
+    if (file.size > 20 * 1024 * 1024) {
+      alert(`文件太大：${file.name}，请控制在 20MB 内`);
+      continue;
+    }
+    validFiles.push(file);
+  }
+
+  if (validFiles.length === 0) return;
+
+  if (validFiles.length > remaining.value) {
+    alert(
+      `今天最多还能上传 ${remaining.value} 张，已为你截取前 ${remaining.value} 张`
+    );
     selectedFiles.value = files.slice(0, remaining.value);
   } else {
     selectedFiles.value = files;
   }
 }
-
+const isUploading = ref(false);
 async function submitUpload() {
   if (!canSubmit.value) return;
+  isUploading.value = true;
   try {
     const res = await uploadImages(selectedFiles.value, nickname.value.trim());
     const uploadedCount = res.data.length;
@@ -182,7 +225,9 @@ async function submitUpload() {
     // …可选：刷新画廊列表或把新图片追加到 images …
   } catch (err: any) {
     console.error(err);
-    alert(err.message || '上传失败');
+    alert(err.message || "上传失败");
+  } finally {
+    isUploading.value = false;
   }
 }
 </script>
@@ -231,7 +276,6 @@ $highlight: #ffd700;
         }
 
         &.loaded {
-
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -344,7 +388,6 @@ $highlight: #ffd700;
       transform: translateY(-50%);
     }
   }
-
 
   /* 上传按钮 */
   .upload-btn {

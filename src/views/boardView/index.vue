@@ -85,7 +85,7 @@ const msgList = ref<HTMLElement>();
 const loadMessages = async () => {
   loading.value = true;
   try {
-    const res = await getMessageList({ page: 1, pageSize: 100 });
+    const res = await getMessageList({ page: 1, pageSize: 9999 });
     if (res.success) {
       messages.value = res.data.reverse();
       await scrollBottom();
