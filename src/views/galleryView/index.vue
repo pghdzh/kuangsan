@@ -3,20 +3,9 @@
     <button class="upload-btn" @click="openUploadModal">上传图片</button>
     <section class="gallery section">
       <div class="gallery-grid">
-        <div
-          v-for="(img, index) in images"
-          :key="index"
-          class="card"
-          @click="openLightbox(index)"
-          ref="cards"
-        >
+        <div v-for="(img, index) in images" :key="index" class="card" @click="openLightbox(index)" ref="cards">
           <div class="card-inner">
-            <img
-              :src="img.src"
-              :alt="img.alt"
-              loading="lazy"
-              @load="onImageLoad($event)"
-            />
+            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
             <div class="overlay">
               <span>查看大图</span>
             </div>
@@ -24,7 +13,16 @@
         </div>
       </div>
     </section>
-
+    <aside class="ranking-panel">
+      <h3 class="ranking-title">上传排行榜</h3>
+      <ul class="ranking-list">
+        <li v-for="(item, idx) in rankingList" :key="idx" class="ranking-item" :class="`rank-${idx + 1}`">
+          <span class="rank">{{ idx + 1 }}</span>
+          <span class="name">{{ item.nickname }}</span>
+          <span class="count">{{ item.count }} 张</span>
+        </li>
+      </ul>
+    </aside>
     <!-- Lightbox Modal -->
     <div v-if="lightboxOpen" class="lightbox" @click.self="closeLightbox">
       <span class="close" @click="closeLightbox">✕</span>
@@ -34,11 +32,7 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div
-      v-if="uploadModalOpen"
-      class="upload-modal-overlay"
-      @click.self="closeUploadModal"
-    >
+    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
       <div class="upload-modal">
         <h3>批量上传图片</h3>
         <p class="stats">
@@ -51,13 +45,7 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input
-            ref="fileInput"
-            type="file"
-            multiple
-            accept="image/*"
-            @change="handleFileSelect"
-          />
+          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
@@ -74,13 +62,34 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, computed } from "vue";
-import { uploadImages } from "@/api/modules/images"; // 前面封装的上传接口
+import { ref, onMounted, computed, nextTick } from "vue";
+import { uploadImages, getAllImages } from "@/api/modules/images"; // 前面封装的上传接口
+import { getRankingList } from "@/api/modules/ranking"; // 根据你的实际路径调整
 
 interface ImageItem {
   src: string;
   alt: string;
 }
+
+interface RankingItem {
+  id?: number; // 如果接口返回有 id，可加上
+  nickname: string;
+  count: number;
+}
+const rankingList = ref<RankingItem[]>([]);
+
+// 默认分页参数（如不分页可省略）
+const page = 1;
+const pageSize = 99;
+
+const fetchRanking = async () => {
+  const res = await getRankingList({ page, pageSize });
+  if (res.success) {
+    rankingList.value = res.data;
+  } else {
+    console.error("获取排行榜失败", res.message);
+  }
+};
 
 // 自动导入 assets/gallery 下所有图片
 const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif,webp}", {
@@ -88,21 +97,17 @@ const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif,webp}", {
   query: "?url",
   import: "default",
 });
-const modules2 = import.meta.glob(
-  "@/assets/images2/*.{jpg,jpeg,png,gif,webp}",
-  {
-    eager: true,
-    query: "?url",
-    import: "default",
-  }
-);
 
-// 合并两个模块对象
-const mergedModules = { ...modules1, ...modules2 };
 
-const images = ref<ImageItem[]>(
-  Object.values(mergedModules).map((url) => ({ src: url as string, alt: "" }))
-);
+
+// 转成 ImageItem[]
+const staticImages = Object.values(modules1).map(url => ({
+  src: url,
+  alt: '',
+}))
+
+// 响应式存放最终图片列表
+const images = ref<ImageItem[]>([])
 
 const lightboxOpen = ref(false);
 const currentIndex = ref(0);
@@ -129,23 +134,7 @@ function onImageLoad(e: Event) {
   card?.classList.add("loaded");
 }
 
-// Scroll-triggered lazy animation
-onMounted(() => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1 }
-  );
-  document.querySelectorAll(".card").forEach((el) => {
-    observer.observe(el);
-  });
-});
+
 // 上传弹窗逻辑
 
 const uploadModalOpen = ref(false);
@@ -230,6 +219,37 @@ async function submitUpload() {
     isUploading.value = false;
   }
 }
+
+// Scroll-triggered lazy animation
+onMounted(async () => {
+  fetchRanking();
+
+  const res = await getAllImages()
+  const remoteUrls = res.images
+  const remoteImages = remoteUrls.map(url => ({
+    src: url,
+    alt: '',
+  }))
+  images.value = [
+    ...staticImages,
+    ...remoteImages,
+  ]
+  await nextTick()
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.1 }
+  );
+  document.querySelectorAll(".card").forEach((el) => {
+    observer.observe(el);
+  });
+});
 </script>
 
 <style lang="scss" scoped>
@@ -276,6 +296,7 @@ $highlight: #ffd700;
         }
 
         &.loaded {
+
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -403,6 +424,7 @@ $highlight: #ffd700;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
     cursor: pointer;
     transition: transform 0.2s, background 0.3s;
+    z-index: 10;
 
     &:hover {
       transform: scale(1.08);
@@ -518,6 +540,86 @@ $highlight: #ffd700;
         }
       }
     }
+  }
+
+  .ranking-panel {
+    width: 240px;
+    padding: 24px 16px;
+    margin-left: 24px;
+    background: radial-gradient(circle at top right, rgba(29, 29, 29, 0.9), rgba(13, 13, 13, 0.9));
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+    position: fixed;
+    top: 80px;
+    right: 24px;
+    color: $text;
+
+    .ranking-title {
+      font-size: 1.3rem;
+      color: $accent;
+      text-align: center;
+      margin-bottom: 16px;
+      font-family: "Cinzel Decorative", serif;
+    }
+
+    .ranking-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      .ranking-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        margin-bottom: 4px;
+        border-radius: 12px;
+        transition: background 0.3s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        // 前三名主色区分
+        &.rank-1 {
+          background: rgba(209, 75, 75, 0.2);
+        }
+
+        &.rank-2 {
+          background: rgba(255, 215, 0, 0.2);
+        }
+
+        &.rank-3 {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .rank {
+          width: 28px;
+          text-align: center;
+          font-weight: bold;
+          font-size: 1rem;
+          color: #ffe;
+        }
+
+        .name {
+          flex: 1;
+          padding: 0 8px;
+          font-size: 0.9rem;
+        }
+
+        .count {
+          font-size: 0.85rem;
+          color: $highlight;
+        }
+      }
+    }
+  }
+}
+
+/* 小屏适配 */
+@media (max-width: 767px) {
+  .ranking-panel {
+    display: none;
   }
 }
 </style>

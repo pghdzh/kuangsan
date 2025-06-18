@@ -1,0 +1,10 @@
+{
+	"version":"Sample 1.0.0",
+	"model":"model.moc",
+	"textures":[
+		"textures/texture_00.png",
+		"textures/texture_01.png",
+		"textures/texture_02.png"
+	]
+	
+}

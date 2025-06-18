@@ -469,7 +469,7 @@ onUnmounted(() => {
 }
 
 .avatar.bot {
-  background-image: url("@/assets/images2/2 (2).jpg");
+  background-image: url("@/assets/images/zavatar.jpg");
   box-shadow: 0 0 12px #ff0033;
 }
 
