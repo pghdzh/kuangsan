@@ -1,22 +1,45 @@
 <template>
   <div class="gallery-container">
+    <!-- 粒子容器 -->
+    <div id="particles-js" style="position: fixed; inset: 0; z-index: -1"></div>
     <button class="upload-btn" @click="openUploadModal">上传图片</button>
     <section class="gallery section">
       <div class="gallery-grid">
-        <div v-for="(img, index) in images" :key="index" class="card" @click="openLightbox(index)" ref="cards">
+        <div
+          v-for="(img, index) in images"
+          :key="index"
+          class="card"
+          @click="openLightbox(index)"
+          ref="cards"
+        >
           <div class="card-inner">
-            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
+            <img
+              :src="img.src"
+              :alt="img.alt"
+              loading="lazy"
+              @load="onImageLoad($event)"
+            />
             <div class="overlay">
               <span>查看大图</span>
             </div>
           </div>
         </div>
       </div>
+      <!-- sentinel：用于触发无限滚动 -->
+      <div ref="sentinel" class="sentinel"></div>
+      <!-- 可选：加载中/结束提示 -->
+      <div class="loading" v-if="loading">加载中...</div>
+      <div class="finished" v-if="finished">已全部加载</div>
     </section>
     <aside class="ranking-panel">
       <h3 class="ranking-title">上传排行榜</h3>
       <ul class="ranking-list">
-        <li v-for="(item, idx) in rankingList" :key="idx" class="ranking-item" :class="`rank-${idx + 1}`">
+        <li
+          v-for="(item, idx) in rankingList"
+          :key="idx"
+          class="ranking-item"
+          :class="`rank-${idx + 1}`"
+        >
           <span class="rank">{{ idx + 1 }}</span>
           <span class="name">{{ item.nickname }}</span>
           <span class="count">{{ item.count }} 张</span>
@@ -32,9 +55,21 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
+    <div
+      v-if="uploadModalOpen"
+      class="upload-modal-overlay"
+      @click.self="closeUploadModal"
+    >
       <div class="upload-modal">
         <h3>批量上传图片</h3>
+        <div class="tip-container">
+          <ul class="tips-list">
+            <li>审核规则：1.不要 AI 图 2.不要色情倾向 3.要我能认出是三三。</li>
+            <li>
+              由于没有用户系统，我这边不好做审核反馈，但只要显示上传成功，我这边肯定能收到。
+            </li>
+          </ul>
+        </div>
         <p class="stats">
           今日已上传：<strong>{{ uploadedToday }}</strong> 张，
           剩余可上传：<strong>{{ remaining }}</strong> 张
@@ -45,7 +80,13 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
+          <input
+            ref="fileInput"
+            type="file"
+            multiple
+            accept="image/*"
+            @change="handleFileSelect"
+          />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
@@ -58,6 +99,16 @@
         </div>
       </div>
     </div>
+
+    <div class="floating-chibis">
+      <img
+        v-for="(pet, i) in chibiList"
+        :key="i"
+        :src="pet.src"
+        :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
+        class="chibi-img"
+      />
+    </div>
   </div>
 </template>
 
@@ -65,6 +116,7 @@
 import { ref, onMounted, computed, nextTick } from "vue";
 import { uploadImages, getAllImages } from "@/api/modules/images"; // 前面封装的上传接口
 import { getRankingList } from "@/api/modules/ranking"; // 根据你的实际路径调整
+import { gsap } from "gsap"; // ← 本地引入
 
 interface ImageItem {
   src: string;
@@ -91,23 +143,68 @@ const fetchRanking = async () => {
   }
 };
 
-// 自动导入 assets/gallery 下所有图片
-const modules1 = import.meta.glob("@/assets/images/*.{jpg,jpeg,png,gif,webp}", {
-  eager: true,
-  query: "?url",
-  import: "default",
-});
+// 通过泛型告诉 TS：每个模块都是 { default: string }
+const modules1 = import.meta.glob<{ default: string }>(
+  "@/assets/images/*.{jpg,jpeg,png,gif,webp}",
+  { eager: true }
+);
 
-
-
-// 转成 ImageItem[]
-const staticImages = Object.values(modules1).map(url => ({
-  src: url,
-  alt: '',
-}))
-
+// 这样 Object.values(modules1) 的每个 module.default 就是 string
+const staticImages: ImageItem[] = Object.values(modules1).map((module) => ({
+  src: module.default,
+  alt: "",
+}));
 // 响应式存放最终图片列表
-const images = ref<ImageItem[]>([])
+const images = ref<ImageItem[]>([]);
+
+const pageImage = ref(1);
+const limit = ref(10);
+const loading = ref(false);
+const finished = ref(false);
+
+const sentinel = ref<HTMLElement | null>(null);
+
+// 1. 在外层创建一个单例 observerCard
+const observerCard = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        observerCard.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.1 }
+);
+
+async function loadNextPage() {
+  if (loading.value || finished.value) return;
+  loading.value = true;
+  try {
+    const res = await getAllImages(pageImage.value, limit.value);
+    const list = (res.images as string[]).map((url) => ({ src: url, alt: "" }));
+    if (list.length === 0) {
+      finished.value = true;
+      return;
+    }
+    // 记录加载前的长度，方便后面找出“新增”节点
+    const oldLength = images.value.length;
+    images.value.push(...list);
+    pageImage.value++;
+
+    // 2. 等待 DOM 更新，然后只 observe 新增的卡片
+    await nextTick();
+    const allCards = document.querySelectorAll<HTMLElement>(".card");
+    // 从 oldLength 开始，到 newLength-1，分别 observe
+    for (let i = oldLength; i < allCards.length; i++) {
+      observerCard.observe(allCards[i]);
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
 
 const lightboxOpen = ref(false);
 const currentIndex = ref(0);
@@ -134,7 +231,6 @@ function onImageLoad(e: Event) {
   card?.classList.add("loaded");
 }
 
-
 // 上传弹窗逻辑
 
 const uploadModalOpen = ref(false);
@@ -149,7 +245,7 @@ function getTodayKey() {
 const uploadedToday = ref<number>(
   Number(localStorage.getItem(getTodayKey()) || 0)
 );
-const remaining = computed(() => Math.max(20 - uploadedToday.value, 0));
+const remaining = computed(() => Math.max(33 - uploadedToday.value, 0));
 
 // 控制提交按钮
 const canSubmit = computed(() => {
@@ -220,21 +316,20 @@ async function submitUpload() {
   }
 }
 
+interface Chibi {
+  src: string;
+  top: number;
+  left: number;
+}
+
+const chibiList = ref<Chibi[]>([]);
+
 // Scroll-triggered lazy animation
 onMounted(async () => {
   fetchRanking();
 
-  const res = await getAllImages()
-  const remoteUrls = res.images
-  const remoteImages = remoteUrls.map(url => ({
-    src: url,
-    alt: '',
-  }))
-  images.value = [
-    ...staticImages,
-    ...remoteImages,
-  ]
-  await nextTick()
+  images.value = [...staticImages];
+  await nextTick();
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -248,6 +343,105 @@ onMounted(async () => {
   );
   document.querySelectorAll(".card").forEach((el) => {
     observer.observe(el);
+  });
+  await loadNextPage();
+
+  // 监听 sentinel 触底，触发下一页加载
+  if (sentinel.value) {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadNextPage();
+        }
+      },
+      { rootMargin: "0px", threshold: 0.1 }
+    );
+    obs.observe(sentinel.value);
+  }
+  // 1. 生成随机位置的小人数组
+  const count = 5;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const leftMax = (vw - 1200) / 2;
+  const rightMin = leftMax + 1200;
+
+  for (let i = 0; i < count; i++) {
+    // 随机决定左边区间还是右边区间
+    const isLeft = Math.random() < 0.5;
+    const left = isLeft
+      ? Math.random() * leftMax // 左边区域随机
+      : rightMin + Math.random() * (vw - rightMin); // 右边区域随机
+
+    chibiList.value.push({
+      src: `/QImages/1 (${i + 1}).png`,
+      top: Math.random() * vh,
+      left,
+    });
+  }
+  // 2. 等 img 渲染到 DOM
+  await nextTick();
+
+  // 3. 给每个小人绑定 GSAP 动画
+  const imgs = document.querySelectorAll<HTMLImageElement>(".chibi-img");
+  imgs.forEach((img, index) => {
+    const padding = 200; // 边缘预留空间
+    // ✅ 初始出场动画（闪现）
+    gsap.fromTo(
+      img,
+      { opacity: 0, scale: 0.5 },
+      {
+        opacity: 1,
+        scale: 1,
+        duration: 0.8,
+        ease: "back.out(2)",
+        delay: 0.2 * index,
+      }
+    );
+
+    // ✅ 鼠标靠近闪避
+    img.addEventListener("mouseenter", () => {
+      gsap.killTweensOf(img);
+
+      gsap.to(img, {
+        x: "+=" + ((Math.random() - 0.5) * 400).toFixed(0),
+        y: "+=" + ((Math.random() - 0.5) * 400).toFixed(0),
+        duration: 1.2,
+        ease: "back.out(2)",
+        onComplete: () => {
+          // 闪避完成后，再重新启用动画
+          animate(img);
+        },
+      });
+    });
+
+    const animate = (img: HTMLImageElement) => {
+      let { x, y } = img.getBoundingClientRect();
+      let deltaX = (Math.random() - 0.5) * 200;
+      let deltaY = (Math.random() - 0.5) * 200;
+
+      // 预测一下偏移后的位置
+      let nextX = x + deltaX;
+      let nextY = y + deltaY;
+
+      // 校正：防漂出左、右、上、下边界
+      if (nextX < padding) deltaX = padding - x;
+      if (nextX + img.width > window.innerWidth - padding)
+        deltaX = window.innerWidth - padding - (x + img.width);
+      if (nextY < padding) deltaY = padding - y;
+      if (nextY + img.height > window.innerHeight - padding)
+        deltaY = window.innerHeight - padding - (y + img.height);
+
+      gsap.to(img, {
+        x: `+=${deltaX.toFixed(0)}`,
+        y: `+=${deltaY.toFixed(0)}`,
+        rotation: `+=${((Math.random() - 0.5) * 60).toFixed(0)}`,
+        duration: 2 + Math.random() * 2,
+        ease: "power1.inOut",
+        onComplete: () => animate(img),
+      });
+    };
+    animate(img);
   });
 });
 </script>
@@ -269,7 +463,22 @@ $highlight: #ffd700;
     transform: translateY(0);
   }
 }
+.floating-chibis {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
 
+.chibi-img {
+  position: absolute;
+  width: 80px;
+  user-select: none;
+  transform-origin: center center;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 10;
+}
 .gallery-container {
   background: radial-gradient(circle at center, #111 0%, $bg 100%);
   color: $text;
@@ -296,7 +505,6 @@ $highlight: #ffd700;
         }
 
         &.loaded {
-
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -449,7 +657,7 @@ $highlight: #ffd700;
     background: #1a1a1a;
     padding: 32px;
     border-radius: 12px;
-    width: 360px;
+    width: 640px;
     color: #fde8e8;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     position: relative;
@@ -462,7 +670,39 @@ $highlight: #ffd700;
         color: #d14b4b;
       }
     }
+    .tip-container {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(255, 215, 0, 0.1); // 轻微的背景区隔
+      border-left: 4px solid #ffd700; // 左侧强调条
+      border-radius: 6px;
 
+      .tips-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        li {
+          position: relative;
+          padding-left: 24px; // 给图标留出空间
+          margin-bottom: 8px;
+          font-size: 0.9rem;
+          color: #ffd700;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          &::before {
+            content: "⚠️"; // 或者用自定义小图标
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 1rem;
+          }
+        }
+      }
+    }
     .tip {
       margin-top: 8px;
       font-size: 0.9rem;
@@ -546,7 +786,11 @@ $highlight: #ffd700;
     width: 240px;
     padding: 24px 16px;
     margin-left: 24px;
-    background: radial-gradient(circle at top right, rgba(29, 29, 29, 0.9), rgba(13, 13, 13, 0.9));
+    background: radial-gradient(
+      circle at top right,
+      rgba(29, 29, 29, 0.9),
+      rgba(13, 13, 13, 0.9)
+    );
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
     position: fixed;
