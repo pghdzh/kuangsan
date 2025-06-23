@@ -24,6 +24,6 @@ export const uploadImages = (files: File[], nickname: string): Promise<any> => {
   });
 };
 
-export const getAllImages = (params: any): any => {
-  return http.get("/api/getAllImages");
+export const getAllImages = (page: number = 1, limit: number = 10): any => {
+  return http.get("/api/getAllImages", { page, limit });
 };
