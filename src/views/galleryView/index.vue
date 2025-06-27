@@ -3,25 +3,24 @@
     <!-- 粒子容器 -->
     <div id="particles-js" style="position: fixed; inset: 0; z-index: -1"></div>
     <button class="upload-btn" @click="openUploadModal">上传图片</button>
+
     <section class="gallery section">
+      <div class="sort-controls">
+        <button @click="toggleSort" class="sort-btn">
+          按 {{ sortBy === 'like_count' ? '点赞量' : '最新上传' }} 排序
+        </button>
+      </div>
       <div class="gallery-grid">
-        <div
-          v-for="(img, index) in images"
-          :key="index"
-          class="card"
-          @click="openLightbox(index)"
-          ref="cards"
-        >
+        <div v-for="(img, index) in images" :key="img.id" class="card" @click="openLightbox(index)" ref="cards">
           <div class="card-inner">
-            <img
-              :src="img.src"
-              :alt="img.alt"
-              loading="lazy"
-              @load="onImageLoad($event)"
-            />
+            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
             <div class="overlay">
               <span>查看大图</span>
             </div>
+            <button class="like-btn" @click.stop="handleLike(img)">
+              <i class="heart" :class="{ liked: img.liked }"></i>
+              <span class="like-count">{{ img.likeCount }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -34,12 +33,7 @@
     <aside class="ranking-panel">
       <h3 class="ranking-title">上传排行榜</h3>
       <ul class="ranking-list">
-        <li
-          v-for="(item, idx) in rankingList"
-          :key="idx"
-          class="ranking-item"
-          :class="`rank-${idx + 1}`"
-        >
+        <li v-for="(item, idx) in rankingList" :key="idx" class="ranking-item" :class="`rank-${idx + 1}`">
           <span class="rank">{{ idx + 1 }}</span>
           <span class="name">{{ item.nickname }}</span>
           <span class="count">{{ item.count }} 张</span>
@@ -55,11 +49,7 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div
-      v-if="uploadModalOpen"
-      class="upload-modal-overlay"
-      @click.self="closeUploadModal"
-    >
+    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
       <div class="upload-modal">
         <h3>批量上传图片</h3>
         <div class="tip-container">
@@ -80,13 +70,7 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input
-            ref="fileInput"
-            type="file"
-            multiple
-            accept="image/*"
-            @change="handleFileSelect"
-          />
+          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
@@ -101,26 +85,71 @@
     </div>
 
     <div class="floating-chibis">
-      <img
-        v-for="(pet, i) in chibiList"
-        :key="i"
-        :src="pet.src"
-        :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
-        class="chibi-img"
-      />
+      <img v-for="(pet, i) in chibiList" :key="i" :src="pet.src" :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
+        class="chibi-img" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, computed, nextTick } from "vue";
-import { uploadImages, getAllImages } from "@/api/modules/images"; // 前面封装的上传接口
+import { ref, onMounted, computed, nextTick, onBeforeUnmount } from "vue";
+import { uploadImages } from "@/api/modules/images"; // 前面封装的上传接口
 import { getRankingList } from "@/api/modules/ranking"; // 根据你的实际路径调整
 import { gsap } from "gsap"; // ← 本地引入
+import { getImagesLikesList, likeImage } from "@/api/modules/imagesLikes"
+import { debounce } from 'lodash'
+
+
+const sortBy = ref<'uploaded_at' | 'like_count'>('uploaded_at');
+const order = ref<'asc' | 'desc'>('asc');
+function toggleSort() {
+  if (sortBy.value === 'uploaded_at') {
+    sortBy.value = 'like_count';
+    order.value = 'desc';
+  } else {
+    sortBy.value = 'uploaded_at';
+    order.value = 'asc';
+  }
+  pageImage.value = 1
+  images.value = []
+  finished.value = false;
+  window.scrollTo(0, 0)
+  loadNextPage();
+}
+// 获取已点赞 ID 数组
+function getLikedIds(): number[] {
+  const data = localStorage.getItem('likedImageIds');
+  return data ? JSON.parse(data) : [];
+}
+
+// 保存已点赞 ID 数组
+function setLikedIds(ids: number[]) {
+  localStorage.setItem('likedImageIds', JSON.stringify(ids));
+}
+
+async function handleLike(img: ImageItem) {
+  if (img.liked) return; // 已点过就不重复调用
+
+  try {
+    await likeImage(img.id);        // 调用后端接口
+    img.likeCount += 1;            // 本地更新点赞数
+    img.liked = true;               // 标记已点赞
+
+    // 更新 localStorage
+    const likedIds = getLikedIds();
+    likedIds.push(img.id);
+    setLikedIds(likedIds);
+  } catch (error) {
+    console.error('点赞失败', error);
+    alert('点赞失败，请稍后重试');
+  }
+}
 
 interface ImageItem {
   src: string;
   alt: string;
+  likeCount: number,
+  id: number,
 }
 
 interface RankingItem {
@@ -143,17 +172,7 @@ const fetchRanking = async () => {
   }
 };
 
-// 通过泛型告诉 TS：每个模块都是 { default: string }
-const modules1 = import.meta.glob<{ default: string }>(
-  "@/assets/images/*.{jpg,jpeg,png,gif,webp}",
-  { eager: true }
-);
 
-// 这样 Object.values(modules1) 的每个 module.default 就是 string
-const staticImages: ImageItem[] = Object.values(modules1).map((module) => ({
-  src: module.default,
-  alt: "",
-}));
 // 响应式存放最终图片列表
 const images = ref<ImageItem[]>([]);
 
@@ -176,35 +195,52 @@ const observerCard = new IntersectionObserver(
   },
   { threshold: 0.1 }
 );
+// 2. 每次有新卡片时，都调用这个方法去挂载观察
+async function observeNewCards(startIndex = 0) {
+  await nextTick()
+  const cards = document.querySelectorAll<HTMLElement>('.card')
+  for (let i = startIndex; i < cards.length; i++) {
+    observerCard.observe(cards[i])
+  }
+}
 
 async function loadNextPage() {
   if (loading.value || finished.value) return;
   loading.value = true;
   try {
-    const res = await getAllImages(pageImage.value, limit.value);
-    const list = (res.images as string[]).map((url) => ({ src: url, alt: "" }));
+    const res = await getImagesLikesList({ page: pageImage.value, limit: limit.value, sortBy: sortBy.value, character_key: 'kurumi', order: order.value });
+    const likedIds = getLikedIds();
+    const list = (res.images as Array<{ url: string; like_count: number }>).map(item => ({
+      src: item.url,
+      alt: '',
+      likeCount: item.like_count,
+      id: item.id,          // 如果需要的话，方便点赞用
+      liked: likedIds.includes(item.id),
+    }));
     if (list.length === 0) {
       finished.value = true;
       return;
     }
     // 记录加载前的长度，方便后面找出“新增”节点
     const oldLength = images.value.length;
-    images.value.push(...list);
+    const existingIds = new Set(images.value.map(i => i.id));
+    const filtered = list.filter(item => !existingIds.has(item.id));
+    images.value.push(...filtered);
     pageImage.value++;
 
-    // 2. 等待 DOM 更新，然后只 observe 新增的卡片
-    await nextTick();
-    const allCards = document.querySelectorAll<HTMLElement>(".card");
-    // 从 oldLength 开始，到 newLength-1，分别 observe
-    for (let i = oldLength; i < allCards.length; i++) {
-      observerCard.observe(allCards[i]);
-    }
+    observeNewCards(oldLength)
   } catch (err) {
     console.error(err);
   } finally {
     loading.value = false;
   }
 }
+
+// 3. 给 loadNextPage 包装一个防抖版
+const debouncedLoad = debounce(() => {
+  loadNextPage()
+}, 200, { leading: true, trailing: false })
+
 
 const lightboxOpen = ref(false);
 const currentIndex = ref(0);
@@ -256,7 +292,31 @@ const canSubmit = computed(() => {
   );
 });
 
+// 放在 script 顶部，或者 utils 里
+function clearOldUploadRecords() {
+  const today = new Date()
+  const storage = window.localStorage
+  for (const key of Object.keys(storage)) {
+    if (!key.startsWith('uploaded_')) continue
+
+    // key 格式 uploaded_YYYY-MM-DD
+    const dateStr = key.slice('uploaded_'.length)
+    const recordDate = new Date(dateStr)
+    if (isNaN(recordDate.getTime())) continue
+
+    // 计算相差天数
+    const diffMs = today.getTime() - recordDate.getTime()
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+
+    // 如果超过 2 天，就删掉
+    if (diffDays > 2) {
+      storage.removeItem(key)
+    }
+  }
+}
+
 function openUploadModal() {
+  clearOldUploadRecords()
   nickname.value = "";
   selectedFiles.value = [];
   if (fileInput.value) fileInput.value.value = "";
@@ -323,40 +383,23 @@ interface Chibi {
 }
 
 const chibiList = ref<Chibi[]>([]);
-
+let sentinelObserver: IntersectionObserver
 // Scroll-triggered lazy animation
 onMounted(async () => {
-  fetchRanking();
+  // 1. 拉排行榜
+  await fetchRanking();
 
-  images.value = [...staticImages];
-  await nextTick();
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1 }
-  );
-  document.querySelectorAll(".card").forEach((el) => {
-    observer.observe(el);
-  });
-  await loadNextPage();
+  // 2. 拉第一页图片并挂载动画 observer
+  await loadNextPage();        // 内部会调用 observeNewCards(oldLen)
+  // 对首次卡片做一次完整 observe
+  observeNewCards(0);
 
-  // 监听 sentinel 触底，触发下一页加载
+  // 3. 初始化 sentinelObserver，再 observe
+  sentinelObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) debouncedLoad();
+  }, { rootMargin: '0px', threshold: 0.1 });
   if (sentinel.value) {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadNextPage();
-        }
-      },
-      { rootMargin: "0px", threshold: 0.1 }
-    );
-    obs.observe(sentinel.value);
+    sentinelObserver.observe(sentinel.value);
   }
   // 1. 生成随机位置的小人数组
   const count = 5;
@@ -444,6 +487,12 @@ onMounted(async () => {
     animate(img);
   });
 });
+
+onBeforeUnmount(() => {
+  observerCard.disconnect();
+  sentinelObserver.disconnect();
+  // 以及你在 onMounted 里新建的其它 Observer
+});
 </script>
 
 <style lang="scss" scoped>
@@ -463,6 +512,7 @@ $highlight: #ffd700;
     transform: translateY(0);
   }
 }
+
 .floating-chibis {
   position: fixed;
   inset: 0;
@@ -479,6 +529,7 @@ $highlight: #ffd700;
   position: absolute;
   z-index: 10;
 }
+
 .gallery-container {
   background: radial-gradient(circle at center, #111 0%, $bg 100%);
   color: $text;
@@ -489,6 +540,28 @@ $highlight: #ffd700;
     padding: 80px 20px;
     max-width: 1200px;
     margin: 0 auto;
+
+    .sort-controls {
+      text-align: center;
+      margin: 16px 0;
+
+      .sort-btn {
+        padding: 6px 16px;
+        background: #d14b4b;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        transition: all 0.3s;
+
+        &:hover {
+          background: #ffd700;
+          color: #111;
+        }
+      }
+    }
 
     .gallery-grid {
       display: grid;
@@ -505,6 +578,7 @@ $highlight: #ffd700;
         }
 
         &.loaded {
+
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -559,6 +633,82 @@ $highlight: #ffd700;
           &:hover .overlay {
             opacity: 1;
           }
+
+          .like-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+
+            &:hover {
+              transform: scale(1.3);
+            }
+
+            .heart {
+              width: 24px;
+              height: 24px;
+              background: url('/icons/heart-red-outline.svg') no-repeat center;
+              background-size: contain;
+              transition: all 0.3s ease;
+              filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.7));
+            }
+
+            .liked {
+              background: url('/icons/heart-red-filled.svg') no-repeat center;
+              background-size: contain;
+              animation: pop 0.4s ease;
+
+              /* 持续呼吸光效 */
+              &::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 40px;
+                height: 40px;
+                background: rgba(255, 0, 0, 0.3);
+                border-radius: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                animation: pulse 1.2s ease-out infinite;
+                pointer-events: none;
+              }
+            }
+
+            .like-count {
+              font-size: 1rem;
+              color: #ff4b4b;
+              text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+              font-weight: bold;
+            }
+          }
+
+          @keyframes pulse {
+            0% {
+              transform: translate(-50%, -50%) scale(0.6);
+              opacity: 0.6;
+            }
+
+            50% {
+              transform: translate(-50%, -50%) scale(1.2);
+              opacity: 0;
+            }
+
+            100% {
+              transform: translate(-50%, -50%) scale(0.6);
+              opacity: 0;
+            }
+          }
+
+
         }
       }
     }
@@ -670,6 +820,7 @@ $highlight: #ffd700;
         color: #d14b4b;
       }
     }
+
     .tip-container {
       margin-top: 16px;
       padding: 12px 16px;
@@ -703,6 +854,7 @@ $highlight: #ffd700;
         }
       }
     }
+
     .tip {
       margin-top: 8px;
       font-size: 0.9rem;
@@ -786,11 +938,9 @@ $highlight: #ffd700;
     width: 240px;
     padding: 24px 16px;
     margin-left: 24px;
-    background: radial-gradient(
-      circle at top right,
-      rgba(29, 29, 29, 0.9),
-      rgba(13, 13, 13, 0.9)
-    );
+    background: radial-gradient(circle at top right,
+        rgba(29, 29, 29, 0.9),
+        rgba(13, 13, 13, 0.9));
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
     position: fixed;
@@ -810,7 +960,8 @@ $highlight: #ffd700;
       list-style: none;
       padding: 0;
       margin: 0;
-
+      overflow-y: auto;
+      height: 55vh;
       .ranking-item {
         display: flex;
         align-items: center;

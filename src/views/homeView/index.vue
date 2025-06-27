@@ -8,9 +8,7 @@
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn" aria-label="角色概览"
-            >角色概览</router-link
-          >
+          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
         </div>
       </div>
       <!-- 时钟齿轮装饰 -->
@@ -23,6 +21,8 @@
           <div class="thank-item">kurumi</div>
           <div class="thank-item">翎蘊</div>
           <div class="thank-item">神乐三三</div>
+          <div class="thank-item">doMGameMaker</div>
+
         </div>
       </div>
     </section>
@@ -36,22 +36,13 @@
             <stop offset="100%" stop-color="#800000" />
           </linearGradient>
         </defs>
-        <path
-          d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z"
-          fill="url(#waveGrad3)"
-        />
+        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
       </svg>
       <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.6)"
-        />
+        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
       </svg>
       <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.3)"
-        />
+        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
       </svg>
     </footer>
   </div>
@@ -218,8 +209,7 @@ onBeforeUnmount(() => {
         text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6)
-          forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -242,11 +232,9 @@ onBeforeUnmount(() => {
             width: 60px;
             height: 2px;
             margin: 12px auto 0;
-            background: linear-gradient(
-              90deg,
-              rgba(232, 190, 190, 0),
-              rgba(232, 190, 190, 1)
-            );
+            background: linear-gradient(90deg,
+                rgba(232, 190, 190, 0),
+                rgba(232, 190, 190, 1));
           }
         }
 
@@ -297,6 +285,7 @@ onBeforeUnmount(() => {
         right: 10%;
       }
     }
+
     .thank-list {
       position: absolute;
       top: 50%;
@@ -327,7 +316,7 @@ onBeforeUnmount(() => {
         position: relative;
         height: calc(100% - 2.5rem);
         overflow: hidden;
-       
+
         &::before,
         &::after {
           content: "";
@@ -338,17 +327,15 @@ onBeforeUnmount(() => {
           pointer-events: none;
           z-index: 5;
         }
-    
+
       }
 
       .thank-item {
         margin: 8px 0;
         padding: 8px 12px;
-        background: linear-gradient(
-          135deg,
-          rgba(209, 75, 75, 0.4),
-          rgba(128, 0, 0, 0.4)
-        );
+        background: linear-gradient(135deg,
+            rgba(209, 75, 75, 0.4),
+            rgba(128, 0, 0, 0.4));
         border: 1px solid rgba(209, 75, 75, 0.8);
         border-radius: 24px;
         text-align: center;
@@ -368,12 +355,15 @@ onBeforeUnmount(() => {
         &:nth-child(4n + 1) {
           animation-duration: 5s;
         }
+
         &:nth-child(4n + 2) {
           animation-duration: 6s;
         }
+
         &:nth-child(4n + 3) {
           animation-duration: 4.5s;
         }
+
         &:nth-child(4n) {
           animation-duration: 5.5s;
         }
@@ -390,6 +380,7 @@ onBeforeUnmount(() => {
           box-shadow: 0 0 8px rgba(209, 75, 75, 0.6),
             0 4px 12px rgba(0, 0, 0, 0.5);
         }
+
         to {
           box-shadow: 0 0 16px rgba(209, 75, 75, 1),
             0 8px 24px rgba(0, 0, 0, 0.7);
@@ -402,12 +393,13 @@ onBeforeUnmount(() => {
         0% {
           transform: translateY(0) rotateZ(0deg);
         }
+
         100% {
           transform: translateY(-6px) rotateZ(-2deg);
         }
       }
 
-  
+
     }
 
 
@@ -470,6 +462,7 @@ onBeforeUnmount(() => {
   }
 
   @keyframes arrowBounce {
+
     0%,
     100% {
       transform: translateY(0) rotate(-45deg);
@@ -486,6 +479,9 @@ onBeforeUnmount(() => {
   .home-container .hero .hero-overlay .hero-text {
     width: 80%;
   }
-  .hero .thank-list { display: none; }
+
+  .hero .thank-list {
+    display: none;
+  }
 }
 </style>
