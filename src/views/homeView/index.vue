@@ -14,8 +14,24 @@
       <!-- 时钟齿轮装饰 -->
       <div class="gear-deco gear1"></div>
       <div class="gear-deco gear2"></div>
+      <!-- 充电排行榜 -->
+      <div class="ranking-list">
+        <h3>充电鸣谢榜</h3>
+        <div class="scroll-list">
+          <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
+            <span class="rank">{{ idx + 1 }}</span>
+            <span class="name">{{ item.name }}</span>
+            <span class="value">{{ item.value }}</span>
+          </div>
+        </div>
+        <div class="tips">
+          <p>当前粉丝：<span class="highlight">{{ fansCount }}</span> / 目标 <span class="highlight">600</span> 粉丝开启抽奖（流麻、透光浮雕）
+          </p>
+          <p>根据充电量增加获奖权重</p>
+        </div>
+      </div>
       <div class="thank-list">
-        <h3>感谢名单</h3>
+        <h3>功能提议感谢名单</h3>
         <div class="scroll-list">
           <div class="thank-item">莺时零散</div>
           <div class="thank-item">kurumi</div>
@@ -51,6 +67,20 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import rose from "@/assets/rose.png";
+import { getBiliFansCount } from '@/api/modules/bilbilReq'
+// 排行榜示例数据
+interface RankItem {
+  name: string;
+  value: number;
+}
+const ranking = ref<RankItem[]>([
+  { name: '三三Night', value: 4.03 },
+]);
+
+// 示例：粉丝数
+const fansCount = ref(423);
+
+
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 let ctx: CanvasRenderingContext2D;
@@ -161,7 +191,19 @@ function tick(now: number) {
   animationId = requestAnimationFrame(tick);
 }
 
-onMounted(() => {
+onMounted(async () => {
+
+  try {
+    const res = await getBiliFansCount();
+    if (res.code === 0) {
+      fansCount.value = res.data.follower;
+    } else {
+      console.error('获取粉丝数失败：', res.message);
+    }
+  } catch (err) {
+    console.error('请求出错：', err);
+  }
+
   const canvas = canvasEl.value!;
   ctx = canvas.getContext("2d")!;
 
@@ -261,6 +303,109 @@ onBeforeUnmount(() => {
             outline: none;
             box-shadow: 0 0 0 3px rgba(209, 75, 75, 0.5);
           }
+        }
+      }
+    }
+
+    .ranking-list {
+      position: absolute;
+      top: 50%;
+      left: 5%;
+      transform: translateY(-50%);
+      width: 18%;
+      max-height: 60%;
+      /* 给足空间给 tips */
+      padding: 16px;
+      background: rgba(10, 5, 5, 0.6);
+      border: 2px solid rgba(232, 190, 190, 0.6);
+      border-radius: 16px;
+      box-shadow: 0 0 16px rgba(209, 75, 75, 0.8), 0 8px 24px rgba(0, 0, 0, 0.7);
+      color: #e8bebe;
+      overflow: hidden;
+      backdrop-filter: blur(4px);
+      animation: glowBorder 3s ease-in-out infinite alternate;
+      z-index: 10;
+
+      h3 {
+        margin: 0 0 12px;
+        font-family: 'Cinzel Decorative', serif;
+        font-size: 1.5rem;
+        text-align: center;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .scroll-list {
+        height: calc(100% - 6rem);
+        /* 留出约 6rem 高给 tips */
+        overflow-y: auto;
+      }
+
+      .rank-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 6px 0;
+        padding: 6px 10px;
+        background: linear-gradient(135deg, rgba(209, 75, 75, 0.3), rgba(128, 0, 0, 0.3));
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: default;
+        animation: float 4s ease-in-out infinite alternate;
+
+        /* 不同序号随机时长 */
+        &:nth-child(4n + 1) {
+          animation-duration: 5s;
+        }
+
+        &:nth-child(4n + 2) {
+          animation-duration: 6s;
+        }
+
+        &:nth-child(4n + 3) {
+          animation-duration: 4.5s;
+        }
+
+        &:nth-child(4n) {
+          animation-duration: 5.5s;
+        }
+
+        .rank {
+          font-family: 'Cinzel Decorative', serif;
+          font-size: 1.1rem;
+          width: 24px;
+          text-align: center;
+          color: #ffd700;
+        }
+
+        .name {
+          flex: 1;
+          margin: 0 8px;
+        }
+
+        .value {
+          font-style: italic;
+        }
+
+        &:hover {
+          transform: translateZ(5px) scale(1.05);
+          box-shadow: 0 6px 16px rgba(209, 75, 75, 0.8);
+        }
+      }
+
+      .tips {
+        padding: 8px 10px;
+        background: rgba(32, 16, 16, 0.7);
+        border-top: 1px solid rgba(232, 190, 190, 0.4);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        text-align: center;
+
+        .highlight {
+          color: #ffb86c;
+          font-weight: bold;
         }
       }
     }
@@ -481,6 +626,10 @@ onBeforeUnmount(() => {
   }
 
   .hero .thank-list {
+    display: none;
+  }
+
+  .ranking-list {
     display: none;
   }
 }

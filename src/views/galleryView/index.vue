@@ -101,14 +101,14 @@ import { debounce } from 'lodash'
 
 
 const sortBy = ref<'uploaded_at' | 'like_count'>('uploaded_at');
-const order = ref<'asc' | 'desc'>('asc');
+const order = ref<'asc' | 'desc'>('desc');
 function toggleSort() {
   if (sortBy.value === 'uploaded_at') {
     sortBy.value = 'like_count';
     order.value = 'desc';
   } else {
     sortBy.value = 'uploaded_at';
-    order.value = 'asc';
+    order.value = 'desc';
   }
   pageImage.value = 1
   images.value = []
@@ -962,6 +962,7 @@ $highlight: #ffd700;
       margin: 0;
       overflow-y: auto;
       height: 55vh;
+
       .ranking-item {
         display: flex;
         align-items: center;
