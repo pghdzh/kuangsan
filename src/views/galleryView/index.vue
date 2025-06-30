@@ -7,13 +7,24 @@
     <section class="gallery section">
       <div class="sort-controls">
         <button @click="toggleSort" class="sort-btn">
-          按 {{ sortBy === 'like_count' ? '点赞量' : '最新上传' }} 排序
+          按 {{ sortBy === "like_count" ? "点赞量" : "最新上传" }} 排序
         </button>
       </div>
       <div class="gallery-grid">
-        <div v-for="(img, index) in images" :key="img.id" class="card" @click="openLightbox(index)" ref="cards">
+        <div
+          v-for="(img, index) in images"
+          :key="img.id"
+          class="card"
+          @click="openLightbox(index)"
+          ref="cards"
+        >
           <div class="card-inner">
-            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
+            <img
+              :src="img.src"
+              :alt="img.alt"
+              loading="lazy"
+              @load="onImageLoad($event)"
+            />
             <div class="overlay">
               <span>查看大图</span>
             </div>
@@ -33,7 +44,12 @@
     <aside class="ranking-panel">
       <h3 class="ranking-title">上传排行榜</h3>
       <ul class="ranking-list">
-        <li v-for="(item, idx) in rankingList" :key="idx" class="ranking-item" :class="`rank-${idx + 1}`">
+        <li
+          v-for="(item, idx) in rankingList"
+          :key="idx"
+          class="ranking-item"
+          :class="`rank-${idx + 1}`"
+        >
           <span class="rank">{{ idx + 1 }}</span>
           <span class="name">{{ item.nickname }}</span>
           <span class="count">{{ item.count }} 张</span>
@@ -49,7 +65,11 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
+    <div
+      v-if="uploadModalOpen"
+      class="upload-modal-overlay"
+      @click.self="closeUploadModal"
+    >
       <div class="upload-modal">
         <h3>批量上传图片</h3>
         <div class="tip-container">
@@ -70,7 +90,13 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
+          <input
+            ref="fileInput"
+            type="file"
+            multiple
+            accept="image/*"
+            @change="handleFileSelect"
+          />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
@@ -85,8 +111,13 @@
     </div>
 
     <div class="floating-chibis">
-      <img v-for="(pet, i) in chibiList" :key="i" :src="pet.src" :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
-        class="chibi-img" />
+      <img
+        v-for="(pet, i) in chibiList"
+        :key="i"
+        :src="pet.src"
+        :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
+        class="chibi-img"
+      />
     </div>
   </div>
 </template>
@@ -96,60 +127,60 @@ import { ref, onMounted, computed, nextTick, onBeforeUnmount } from "vue";
 import { uploadImages } from "@/api/modules/images"; // 前面封装的上传接口
 import { getRankingList } from "@/api/modules/ranking"; // 根据你的实际路径调整
 import { gsap } from "gsap"; // ← 本地引入
-import { getImagesLikesList, likeImage } from "@/api/modules/imagesLikes"
-import { debounce } from 'lodash'
+import { getImagesLikesList, likeImage } from "@/api/modules/imagesLikes";
+import { debounce } from "lodash";
 
-
-const sortBy = ref<'uploaded_at' | 'like_count'>('uploaded_at');
-const order = ref<'asc' | 'desc'>('desc');
+const sortBy = ref<"uploaded_at" | "like_count">("uploaded_at");
+const order = ref<"asc" | "desc">("desc");
 function toggleSort() {
-  if (sortBy.value === 'uploaded_at') {
-    sortBy.value = 'like_count';
-    order.value = 'desc';
+  if (sortBy.value === "uploaded_at") {
+    sortBy.value = "like_count";
+    order.value = "desc";
   } else {
-    sortBy.value = 'uploaded_at';
-    order.value = 'desc';
+    sortBy.value = "uploaded_at";
+    order.value = "desc";
   }
-  pageImage.value = 1
-  images.value = []
+  pageImage.value = 1;
+  images.value = [];
   finished.value = false;
-  window.scrollTo(0, 0)
+  window.scrollTo(0, 0);
   loadNextPage();
 }
 // 获取已点赞 ID 数组
 function getLikedIds(): number[] {
-  const data = localStorage.getItem('likedImageIds');
+  const data = localStorage.getItem("likedImageIds");
   return data ? JSON.parse(data) : [];
 }
 
 // 保存已点赞 ID 数组
 function setLikedIds(ids: number[]) {
-  localStorage.setItem('likedImageIds', JSON.stringify(ids));
+  localStorage.setItem("likedImageIds", JSON.stringify(ids));
 }
 
 async function handleLike(img: ImageItem) {
   if (img.liked) return; // 已点过就不重复调用
 
   try {
-    await likeImage(img.id);        // 调用后端接口
-    img.likeCount += 1;            // 本地更新点赞数
-    img.liked = true;               // 标记已点赞
+    await likeImage(img.id); // 调用后端接口
+    img.likeCount += 1; // 本地更新点赞数
+    img.liked = true; // 标记已点赞
 
     // 更新 localStorage
     const likedIds = getLikedIds();
     likedIds.push(img.id);
     setLikedIds(likedIds);
   } catch (error) {
-    console.error('点赞失败', error);
-    alert('点赞失败，请稍后重试');
+    console.error("点赞失败", error);
+    alert("点赞失败，请稍后重试");
   }
 }
 
 interface ImageItem {
   src: string;
   alt: string;
-  likeCount: number,
-  id: number,
+  likeCount: number;
+  id: number;
+  liked: Boolean;
 }
 
 interface RankingItem {
@@ -171,7 +202,6 @@ const fetchRanking = async () => {
     console.error("获取排行榜失败", res.message);
   }
 };
-
 
 // 响应式存放最终图片列表
 const images = ref<ImageItem[]>([]);
@@ -197,10 +227,10 @@ const observerCard = new IntersectionObserver(
 );
 // 2. 每次有新卡片时，都调用这个方法去挂载观察
 async function observeNewCards(startIndex = 0) {
-  await nextTick()
-  const cards = document.querySelectorAll<HTMLElement>('.card')
+  await nextTick();
+  const cards = document.querySelectorAll<HTMLElement>(".card");
   for (let i = startIndex; i < cards.length; i++) {
-    observerCard.observe(cards[i])
+    observerCard.observe(cards[i]);
   }
 }
 
@@ -208,13 +238,21 @@ async function loadNextPage() {
   if (loading.value || finished.value) return;
   loading.value = true;
   try {
-    const res = await getImagesLikesList({ page: pageImage.value, limit: limit.value, sortBy: sortBy.value, character_key: 'kurumi', order: order.value });
+    const res = await getImagesLikesList({
+      page: pageImage.value,
+      limit: limit.value,
+      sortBy: sortBy.value,
+      character_key: "kurumi",
+      order: order.value,
+    });
     const likedIds = getLikedIds();
-    const list = (res.images as Array<{ url: string; like_count: number }>).map(item => ({
+    const list = (
+      res.images as Array<{ url: string; like_count: number; id: number }>
+    ).map((item) => ({
       src: item.url,
-      alt: '',
+      alt: "",
       likeCount: item.like_count,
-      id: item.id,          // 如果需要的话，方便点赞用
+      id: item.id, // 如果需要的话，方便点赞用
       liked: likedIds.includes(item.id),
     }));
     if (list.length === 0) {
@@ -223,12 +261,12 @@ async function loadNextPage() {
     }
     // 记录加载前的长度，方便后面找出“新增”节点
     const oldLength = images.value.length;
-    const existingIds = new Set(images.value.map(i => i.id));
-    const filtered = list.filter(item => !existingIds.has(item.id));
+    const existingIds = new Set(images.value.map((i) => i.id));
+    const filtered = list.filter((item) => !existingIds.has(item.id));
     images.value.push(...filtered);
     pageImage.value++;
 
-    observeNewCards(oldLength)
+    observeNewCards(oldLength);
   } catch (err) {
     console.error(err);
   } finally {
@@ -237,10 +275,13 @@ async function loadNextPage() {
 }
 
 // 3. 给 loadNextPage 包装一个防抖版
-const debouncedLoad = debounce(() => {
-  loadNextPage()
-}, 200, { leading: true, trailing: false })
-
+const debouncedLoad = debounce(
+  () => {
+    loadNextPage();
+  },
+  200,
+  { leading: true, trailing: false }
+);
 
 const lightboxOpen = ref(false);
 const currentIndex = ref(0);
@@ -294,29 +335,29 @@ const canSubmit = computed(() => {
 
 // 放在 script 顶部，或者 utils 里
 function clearOldUploadRecords() {
-  const today = new Date()
-  const storage = window.localStorage
+  const today = new Date();
+  const storage = window.localStorage;
   for (const key of Object.keys(storage)) {
-    if (!key.startsWith('uploaded_')) continue
+    if (!key.startsWith("uploaded_")) continue;
 
     // key 格式 uploaded_YYYY-MM-DD
-    const dateStr = key.slice('uploaded_'.length)
-    const recordDate = new Date(dateStr)
-    if (isNaN(recordDate.getTime())) continue
+    const dateStr = key.slice("uploaded_".length);
+    const recordDate = new Date(dateStr);
+    if (isNaN(recordDate.getTime())) continue;
 
     // 计算相差天数
-    const diffMs = today.getTime() - recordDate.getTime()
-    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+    const diffMs = today.getTime() - recordDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
     // 如果超过 2 天，就删掉
     if (diffDays > 2) {
-      storage.removeItem(key)
+      storage.removeItem(key);
     }
   }
 }
 
 function openUploadModal() {
-  clearOldUploadRecords()
+  clearOldUploadRecords();
   nickname.value = "";
   selectedFiles.value = [];
   if (fileInput.value) fileInput.value.value = "";
@@ -383,45 +424,61 @@ interface Chibi {
 }
 
 const chibiList = ref<Chibi[]>([]);
-let sentinelObserver: IntersectionObserver
+let sentinelObserver: IntersectionObserver;
 // Scroll-triggered lazy animation
 onMounted(async () => {
   // 1. 拉排行榜
   await fetchRanking();
 
   // 2. 拉第一页图片并挂载动画 observer
-  await loadNextPage();        // 内部会调用 observeNewCards(oldLen)
+  await loadNextPage(); // 内部会调用 observeNewCards(oldLen)
   // 对首次卡片做一次完整 observe
   observeNewCards(0);
 
   // 3. 初始化 sentinelObserver，再 observe
-  sentinelObserver = new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) debouncedLoad();
-  }, { rootMargin: '0px', threshold: 0.1 });
+  sentinelObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) debouncedLoad();
+    },
+    { rootMargin: "0px", threshold: 0.1 }
+  );
   if (sentinel.value) {
     sentinelObserver.observe(sentinel.value);
   }
-  // 1. 生成随机位置的小人数组
-  const count = 5;
+  // 1. 基础配置信息
+  const total = 9; // 总共 9 张图（编号 1～9）
+  const pickCount = 3; // 每次抽取 3 张
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  const leftMax = (vw - 1200) / 2;
-  const rightMin = leftMax + 1200;
+  // 如果已知单张小人图片的宽高，可避免超出边界；
+  // 假设小人图片宽 100px、高 100px，按需替换：
+  const imgWidth = 100;
+  const imgHeight = 100;
 
-  for (let i = 0; i < count; i++) {
-    // 随机决定左边区间还是右边区间
-    const isLeft = Math.random() < 0.5;
-    const left = isLeft
-      ? Math.random() * leftMax // 左边区域随机
-      : rightMin + Math.random() * (vw - rightMin); // 右边区域随机
-
-    chibiList.value.push({
-      src: `/QImages/1 (${i + 1}).png`,
-      top: Math.random() * vh,
-      left,
-    });
+  // 2. Fisher–Yates 洗牌函数
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
   }
+
+  // 3. 随机选出 3 个编号
+  const nums = shuffle(Array.from({ length: total }, (_, k) => k + 1));
+  const picks = nums.slice(0, pickCount);
+
+  // 4. 生成随机位置并填充 chibiList
+  chibiList.value = []; // 先清空
+  picks.forEach((i) => {
+    chibiList.value.push({
+      src: `/QImages/1 (${i}).png`,
+      left: Math.random() * (vw - imgWidth), // 保证不超出左右边界
+      top: Math.random() * (vh - imgHeight), // 保证不超出上下边界
+    });
+  });
+
   // 2. 等 img 渲染到 DOM
   await nextTick();
 
@@ -578,7 +635,6 @@ $highlight: #ffd700;
         }
 
         &.loaded {
-
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -656,14 +712,14 @@ $highlight: #ffd700;
             .heart {
               width: 24px;
               height: 24px;
-              background: url('/icons/heart-red-outline.svg') no-repeat center;
+              background: url("/icons/heart-red-outline.svg") no-repeat center;
               background-size: contain;
               transition: all 0.3s ease;
               filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.7));
             }
 
             .liked {
-              background: url('/icons/heart-red-filled.svg') no-repeat center;
+              background: url("/icons/heart-red-filled.svg") no-repeat center;
               background-size: contain;
               animation: pop 0.4s ease;
 
@@ -707,8 +763,6 @@ $highlight: #ffd700;
               opacity: 0;
             }
           }
-
-
         }
       }
     }
@@ -938,9 +992,11 @@ $highlight: #ffd700;
     width: 240px;
     padding: 24px 16px;
     margin-left: 24px;
-    background: radial-gradient(circle at top right,
-        rgba(29, 29, 29, 0.9),
-        rgba(13, 13, 13, 0.9));
+    background: radial-gradient(
+      circle at top right,
+      rgba(29, 29, 29, 0.9),
+      rgba(13, 13, 13, 0.9)
+    );
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
     position: fixed;

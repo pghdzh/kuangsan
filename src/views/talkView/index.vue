@@ -11,6 +11,18 @@
       />
     </div>
     <div class="chat-container">
+      <!-- 统计面板 -->
+      <div class="stats-panel">
+        <div class="stat-item">
+          对话次数：<span>{{ totalChats }}</span> 次
+        </div>
+        <div class="stat-item">
+          已使用：<span>{{ daysUsed }}</span> 天
+        </div>
+        <div class="stat-item">
+          首次使用：<span>{{ firstDate }}</span>
+        </div>
+      </div>
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
           <div
@@ -73,7 +85,49 @@ import MarkdownIt from "markdown-it";
 const md = new MarkdownIt();
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
+const STORAGE_STATS_KEY = "kurumi_chat_stats";
 
+// 统计状态
+interface Stats {
+  firstTimestamp: number;
+  totalChats: number;
+}
+
+const stats = ref<Stats>(loadStats());
+const totalChats = ref(stats.value.totalChats);
+const daysUsed = ref(computeDays(stats.value.firstTimestamp));
+const firstDate = ref(formatDate(stats.value.firstTimestamp));
+
+// 保存统计
+function saveStats() {
+  localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats.value));
+}
+
+function loadStats(): Stats {
+  const saved = localStorage.getItem(STORAGE_STATS_KEY);
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      return s;
+    } catch {
+      // 忽略解析错误
+    }
+  }
+  return { firstTimestamp: Date.now(), totalChats: 0 };
+}
+
+// 计算相隔天数
+function computeDays(start: number): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((Date.now() - start) / msPerDay) + 1;
+}
+
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${(d.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+}
 // 1. 全量导入，直接映射成 string[]
 const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg}", {
   eager: true,
@@ -251,6 +305,12 @@ function playVoice(name: string) {
 
 async function sendMessage() {
   if (!input.value.trim()) return;
+  // 更新统计时机：用户消息入 chatLog
+  stats.value.totalChats++;
+  totalChats.value = stats.value.totalChats;
+  daysUsed.value = computeDays(stats.value.firstTimestamp);
+  saveStats();
+
   resetIdleTimer();
   const userText = input.value;
   chatLog.value.push({
@@ -361,6 +421,7 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
+  daysUsed.value = computeDays(stats.value.firstTimestamp);
   scrollToBottom();
   resetIdleTimer();
   // 2. 每 5 秒切换一次
@@ -436,6 +497,22 @@ onUnmounted(() => {
   padding: 16px;
   gap: 12px;
   height: 100%;
+  .stats-panel {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
+    padding: 8px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    color: #fff;
+    font-size: 14px;
+  }
+
+  .stat-item span {
+    font-weight: bold;
+    color: #ff3366;
+  }
 }
 
 .messages {
