@@ -2,34 +2,31 @@
   <div class="chat-page">
     <!-- 背景轮播放在最底层 -->
     <div class="carousel">
-      <img
-        v-for="(src, idx) in randomFive"
-        :key="idx"
-        :src="src"
-        class="carousel-image"
-        :class="{ active: idx === currentIndex }"
-      />
+      <img v-for="(src, idx) in randomFive" :key="idx" :src="src" class="carousel-image"
+        :class="{ active: idx === currentIndex }" />
     </div>
     <div class="chat-container">
       <!-- 统计面板 -->
+
+      <!-- 统计面板（放在聊天容器顶部） -->
       <div class="stats-panel">
         <div class="stat-item">
-          对话次数：<span>{{ totalChats }}</span> 次
+          总对话次数：<span>{{ stats.totalChats }}</span>
         </div>
         <div class="stat-item">
-          已使用：<span>{{ daysUsed }}</span> 天
+          首次使用：<span>{{ new Date(stats.firstTimestamp).toISOString().slice(0, 10) }}</span>
         </div>
         <div class="stat-item">
-          首次使用：<span>{{ firstDate }}</span>
+          活跃天数：<span>{{ stats.activeDates.length }}</span> 天
         </div>
+        <div class="stat-item">
+          今日对话：<span>{{ stats.dailyChats[today] || 0 }}</span> 次
+        </div>
+        <button class="detail-btn" @click="showModal = true">全部</button>
       </div>
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div
-            v-for="msg in chatLog"
-            :key="msg.id"
-            :class="['message', msg.role, { error: msg.isError }]"
-          >
+          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -49,30 +46,62 @@
         </transition-group>
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
-        <input
-          v-model="input"
-          type="text"
-          placeholder="向时崎狂三提问…"
-          :disabled="loading"
-          @keydown="handleKeydown"
-        />
-        <button type="submit" :disabled="!input.trim() || loading">发送</button>
-        <button type="button" class="clear-btn" @click="clearChat">清空</button>
-        <button
-          type="button"
-          class="voice-btn"
-          @click="isVoiceEnabled = !isVoiceEnabled"
-        >
-          {{ isVoiceEnabled ? "语音开启🔊" : "语音关闭🔇" }}
+        <!-- 输入框 -->
+        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
+        <!-- 清空 & 语音 图标按钮组 -->
+        <div class="btn-group">
+          <button type="button" class="clear-btn" @click="clearChat" :disabled="loading" title="清空对话">
+            ✖
+          </button>
+          <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled" title="切换语音">
+            {{ isVoiceEnabled ? "🔊" : "🔇" }}
+          </button>
+        </div>
+        <!-- 发送主按钮 -->
+        <button type="submit" class="send-btn" :disabled="!input.trim() || loading">
+          发送
+        </button>
+        <!-- 统计数据按钮 -->
+        <button type="button" class="Alldetail-btn" @click="showModal = true" title="查看统计">
+          统计数据
         </button>
       </form>
+    </div>
+
+    <!-- 详细统计弹窗 -->
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div class="modal-content">
+        <h3>详细统计</h3>
+        <ul class="detail-list">
+          <li> 总对话次数：{{ stats.totalChats }}</li>
+          <li> 首次使用：{{ new Date(stats.firstTimestamp).toISOString().slice(0, 10) }}</li>
+          <li> 活跃天数：{{ stats.activeDates.length }} 天</li>
+          <li> 今日对话：{{ stats.dailyChats[today] || 0 }} 次</li>
+          <li>总使用时长：{{ formatDuration(stats.totalTime) }}</li>
+          <li>当前连续活跃：{{ stats.currentStreak }} 天</li>
+          <li>最长连续活跃：{{ stats.longestStreak }} 天</li>
+          <li>
+            最活跃日：{{ stats.mostActiveDay }}
+            （{{ stats.dailyChats[stats.mostActiveDay] || 0 }} 次）
+          </li>
+          <li>彩蛋统计：</li>
+          <ul class="egg-list">
+            <li>鼓励彩蛋：{{ stats.eggCounts.encourage }} 次</li>
+            <li>无输入彩蛋：{{ stats.eggCounts.noInput }} 次</li>
+            <li>里程碑彩蛋：{{ stats.eggCounts.milestone }} 次</li>
+          </ul>
+        </ul>
+        <button class="close-btn" @click="showModal = false">关闭</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
+  reactive,
   ref,
+  computed,
   onMounted,
   nextTick,
   watch,
@@ -85,49 +114,120 @@ import MarkdownIt from "markdown-it";
 const md = new MarkdownIt();
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
-const STORAGE_STATS_KEY = "kurumi_chat_stats";
 
-// 统计状态
+// 本地存储键名
+const STORAGE_STATS_KEY = 'kurumi_chat_stats';
+const showModal = ref(false)
+// Stats 类型声明，确保所有字段都有默认值
 interface Stats {
-  firstTimestamp: number;
-  totalChats: number;
+  firstTimestamp: number;                       // 首次使用时间戳
+  totalChats: number;                           // 总对话次数
+  activeDates: string[];                        // 有发言的日期列表（yyyy‑mm‑dd）
+  dailyChats: Record<string, number>;           // 每日对话次数
+  currentStreak: number;                        // 当前连续活跃天数
+  longestStreak: number;                        // 历史最长连续活跃天数
+  eggCounts: {                                  // 彩蛋触发次数
+    encourage: number;
+    noInput: number;
+    milestone: number;
+  };
+  totalTime: number;                            // 累计使用时长（毫秒）
+  mostActiveDay: string;                        // 最活跃日期（yyyy‑mm‑dd）
 }
 
-const stats = ref<Stats>(loadStats());
-const totalChats = ref(stats.value.totalChats);
-const daysUsed = ref(computeDays(stats.value.firstTimestamp));
-const firstDate = ref(formatDate(stats.value.firstTimestamp));
+// 默认值，用于补齐本地存储中可能缺失的字段
+const defaultStats: Stats = {
+  firstTimestamp: Date.now(),
+  totalChats: 0,
+  activeDates: [],
+  dailyChats: {},
+  currentStreak: 0,
+  longestStreak: 0,
+  eggCounts: { encourage: 0, noInput: 0, milestone: 0 },
+  totalTime: 0,
+  mostActiveDay: new Date().toISOString().slice(0, 10),
+};
 
-// 保存统计
-function saveStats() {
-  localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats.value));
-}
-
+// 从 localStorage 加载并合并默认值
 function loadStats(): Stats {
   const saved = localStorage.getItem(STORAGE_STATS_KEY);
   if (saved) {
     try {
-      const s = JSON.parse(saved);
-      return s;
+      const parsed = JSON.parse(saved);
+      return { ...defaultStats, ...parsed };
     } catch {
-      // 忽略解析错误
+      console.warn('加载统计数据失败，使用默认值');
     }
   }
-  return { firstTimestamp: Date.now(), totalChats: 0 };
+  return { ...defaultStats };
 }
 
-// 计算相隔天数
-function computeDays(start: number): number {
+// 保存到 localStorage
+function saveStats() {
+  localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats));
+}
+
+// 计算已使用天数（至少 1 天）
+function computeDays(startTs: number): number {
   const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((Date.now() - start) / msPerDay) + 1;
+  return Math.floor((Date.now() - startTs) / msPerDay) + 1;
 }
 
-function formatDate(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${(d.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+// 更新「活跃天数」及「连续活跃」逻辑
+function updateActive(date: string) {
+  if (!stats.activeDates.includes(date)) {
+    stats.activeDates.push(date);
+    updateStreak();
+  }
 }
+function updateStreak() {
+  const dates = [...stats.activeDates].sort();
+  let curr = 0, max = stats.longestStreak, prevTs = 0;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  dates.forEach(d => {
+    const ts = new Date(d).getTime();
+    if (prevTs && (ts - prevTs) === 86400000) curr++;
+    else curr = 1;
+    max = Math.max(max, curr);
+    prevTs = ts;
+  });
+  stats.currentStreak = dates[dates.length - 1] === todayStr ? curr : 0;
+  stats.longestStreak = max;
+}
+
+// 更新「每日对话次数」
+function updateDaily(date: string) {
+  stats.dailyChats[date] = (stats.dailyChats[date] || 0) + 1;
+}
+
+// 记录彩蛋触发
+function recordEgg(type: 'encourage' | 'noInput' | 'milestone') {
+  stats.eggCounts[type]++;
+}
+
+// 计算最活跃日
+function mostActiveDay(): string {
+  let day = '', max = 0;
+  for (const [d, c] of Object.entries(stats.dailyChats)) {
+    if (c > max) { max = c; day = d; }
+  }
+  return day || defaultStats.mostActiveDay;
+}
+
+// 格式化总使用时长
+function formatDuration(ms: number): string {
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
+}
+
+// —— Vue 响应式状态 —— 
+const stats = reactive<Stats>(loadStats());
+const today = ref(new Date().toISOString().slice(0, 10));
+// 会话开始时间，用于计算本次时长
+const sessionStart = Date.now();
+
 // 1. 全量导入，直接映射成 string[]
 const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg}", {
   eager: true,
@@ -267,6 +367,7 @@ function checkMilestones(): boolean {
 // 2. 触发彩蛋的方法（随机挑选、打标记）
 function triggerNoInputEgg() {
   const egg = noInputEggs[Math.floor(Math.random() * noInputEggs.length)];
+  recordEgg('noInput')
   // 播放对应语音
   playVoice(egg.file.replace(".mp3", ""));
   // 推入气泡，标记 isEgg: true
@@ -305,10 +406,11 @@ function playVoice(name: string) {
 
 async function sendMessage() {
   if (!input.value.trim()) return;
-  // 更新统计时机：用户消息入 chatLog
-  stats.value.totalChats++;
-  totalChats.value = stats.value.totalChats;
-  daysUsed.value = computeDays(stats.value.firstTimestamp);
+
+  const date = today.value;
+  stats.totalChats++;
+  updateActive(date);
+  updateDaily(date);
   saveStats();
 
   resetIdleTimer();
@@ -338,6 +440,7 @@ async function sendMessage() {
       // 随机挑一条
       const egg =
         encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
+      recordEgg('encourage')
       // 播放对应语音（不带 .mp3 后缀）
       playVoice(egg.file.replace(".mp3", ""));
       // 推入带标记的彩蛋消息
@@ -421,7 +524,7 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
-  daysUsed.value = computeDays(stats.value.firstTimestamp);
+
   scrollToBottom();
   resetIdleTimer();
   // 2. 每 5 秒切换一次
@@ -432,6 +535,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearInterval(timer);
+  stats.totalTime += Date.now() - sessionStart;
+  stats.mostActiveDay = mostActiveDay();
+  saveStats();
 });
 </script>
 
@@ -445,13 +551,34 @@ onUnmounted(() => {
   color: #fff;
   display: flex;
   flex-direction: column;
+
+  @keyframes gradient-flow {
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
   .carousel {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    /* 放在最底层 */
-    /* 叠加所有图片，通过 opacity 实现切换 */
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 1;
+    }
+
     .carousel-image {
       position: absolute;
       width: 100%;
@@ -459,262 +586,363 @@ onUnmounted(() => {
       object-fit: cover;
       opacity: 0;
       transition: opacity 1s ease;
-      filter: blur(1px); /* 轻微模糊 */
+      filter: blur(1px);
+
+      &.active {
+        opacity: 1;
+      }
     }
-
-    .carousel-image.active {
-      opacity: 1;
-    }
-  }
-  /* 遮罩层 */
-  .carousel::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5); /* 遮罩透明度可调 */
-    pointer-events: none;
-    z-index: 1;
-  }
-}
-
-@keyframes gradient-flow {
-  0%,
-  100% {
-    background-position: 0% 50%;
   }
 
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  width: 800px;
-  margin: 0 auto;
-  padding: 16px;
-  gap: 12px;
-  height: 100%;
-  .stats-panel {
-    display: flex;
-    justify-content: space-around;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(6px);
-    padding: 8px 16px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    color: #fff;
-    font-size: 14px;
-  }
-
-  .stat-item span {
-    font-weight: bold;
-    color: #ff3366;
-  }
-}
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 100px;
-  padding-top: 10px;
-  overscroll-behavior: contain;
-  scroll-behavior: smooth;
-}
-
-.message {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.message.user {
-  flex-direction: row-reverse;
-}
-
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  margin: 0 8px;
-  background-size: cover;
-  flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-  z-index: 10;
-}
-
-.avatar.bot {
-  background-image: url("@/assets/images/zavatar.jpg");
-  box-shadow: 0 0 12px #ff0033;
-}
-
-.avatar.user {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.bubble {
-  max-width: 70%;
-  background: rgba(255, 0, 51, 0.1);
-  border: 1px solid rgba(255, 0, 51, 0.4);
-  backdrop-filter: blur(8px);
-  padding: 12px 16px;
-  border-radius: 16px;
-  line-height: 1.6;
-  word-break: break-word;
-  box-shadow: 0 0 8px rgba(255, 0, 51, 0.3);
-}
-.dots {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-}
-.dot {
-  opacity: 0;
-  font-size: 16px;
-  animation: blink 1s infinite;
-}
-.dot:nth-child(1) {
-  animation-delay: 0s;
-}
-.dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.message.bot .bubble {
-  border-radius: 16px 16px 16px 4px;
-}
-
-.message.user .bubble {
-  border-radius: 16px 16px 4px 16px;
-}
-
-.message.error .bubble {
-  background: rgba(255, 51, 102, 0.4);
-  border: 1px solid #ff3366;
-}
-
-.input-area {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 24px;
-  backdrop-filter: blur(6px);
-  padding: 8px;
-  gap: 8px;
-  z-index: 10;
-}
-
-.input-area input {
-  flex: 1;
-  padding: 12px 20px;
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: 16px;
-  outline: none;
-}
-
-.input-area input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.input-area button {
-  background: linear-gradient(to right, #ff0033, #990033);
-  border: none;
-  color: #fff;
-  padding: 0 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.input-area button.clear-btn,
-.input-area .voice-btn {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
-  color: #fff;
-}
-
-.input-area button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.voice-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.loading {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-@media (max-width: 600px) {
-  .avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  .bubble {
-    max-width: 80%;
-    font-size: 14px;
-  }
-}
-
-.egg-text {
-  display: block;
-  opacity: 0.7;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-/* 移动端适配（≤768px） */
-@media (max-width: 768px) {
-  /* 容器宽度调整为全屏 */
   .chat-container {
-    width: 100%;
-    margin: 0;
-    padding: 8px;
-  }
-
-  /* 聊天气泡减小内边距、字体稍小 */
-  .bubble {
-    padding: 8px 12px;
-    font-size: 14px;
-    max-width: 85%;
-  }
-
-  /* 头像再缩小一点 */
-  .avatar {
-    width: 32px;
-    height: 32px;
-  }
-
-  /* 输入区纵向排列，按钮全宽 */
-  .input-area {
+    flex: 1;
+    display: flex;
     flex-direction: column;
-    gap: 6px;
-  }
-  .input-area button {
-    width: 100%;
+    width: 800px;
+    margin: 0 auto;
+    padding: 16px;
+    gap: 12px;
+    height: 100%;
+
+    .stats-panel {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(6px);
+      padding: 8px 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #fff;
+
+      .stat-item {
+        margin-right: 55px;
+
+        span {
+          color: #ff3366;
+          font-weight: bold;
+        }
+      }
+
+      .detail-btn {
+        margin-left: auto;
+        background: transparent;
+        border: 1px solid #ff3366;
+        border-radius: 4px;
+        padding: 4px 12px;
+        color: #ff3366;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(255, 51, 102, 0.1);
+        }
+      }
+    }
   }
 
-  /* 隐藏背景轮播，减少流量和渲染开销 */
-  .carousel {
-    display: none;
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0 100px;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
+
+  .message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    &.user {
+      flex-direction: row-reverse;
+    }
+
+    &.error .bubble {
+      background: rgba(255, 51, 102, 0.4);
+      border: 1px solid #ff3366;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      margin: 0 8px;
+      background-size: cover;
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+      z-index: 10;
+
+      &.bot {
+        background-image: url("@/assets/images/zavatar.jpg");
+        box-shadow: 0 0 12px #ff0033;
+      }
+
+      &.user {
+        background: rgba(255, 255, 255, 0.9);
+      }
+    }
+
+    .bubble {
+      max-width: 70%;
+      background: rgba(255, 0, 51, 0.1);
+      border: 1px solid rgba(255, 0, 51, 0.4);
+      backdrop-filter: blur(8px);
+      padding: 12px 16px;
+      border-radius: 16px;
+      line-height: 1.6;
+      word-break: break-word;
+      box-shadow: 0 0 8px rgba(255, 0, 51, 0.3);
+
+      &.loading {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      // 机器人的气泡尖角
+      .message.bot & {
+        border-radius: 16px 16px 16px 4px;
+      }
+
+      .message.user & {
+        border-radius: 16px 16px 4px 16px;
+      }
+    }
+  }
+
+  .dots {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+
+    .dot {
+      opacity: 0;
+      font-size: 16px;
+      animation: blink 1s infinite;
+
+      &:nth-child(1) {
+        animation-delay: 0s;
+      }
+
+      &:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      &:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 0;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+  }
+
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 24px;
+    backdrop-filter: blur(6px);
+    padding: 8px 12px;
+    gap: 8px;
+    z-index: 10;
+
+    input {
+      flex: 1;
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    // 按钮容器，方便对齐和间距控制
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        &.voice-btn {
+          font-size: 18px;
+        }
+
+        &.clear-btn {
+          font-size: 16px;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    // 发送按钮
+    .send-btn {
+      flex-shrink: 0;
+      padding: 0 24px;
+      height: 40px;
+      background: linear-gradient(to right, #ff0033, #990033);
+      border: none;
+      border-radius: 20px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    // “更多统计”按钮，高亮但不抢主按钮风头
+    .Alldetail-btn {
+      flex-shrink: 0;
+      margin-left: 4px;
+      background: transparent;
+      border: 1px solid #ff3366;
+      border-radius: 4px;
+      padding: 4px 12px;
+      color: #ff3366;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: none;
+
+      &:hover {
+        background: rgba(255, 51, 102, 0.1);
+      }
+    }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .modal-content {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 12px;
+      width: 300px;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+
+      h3 {
+        margin-bottom: 12px;
+        font-size: 18px;
+        text-align: center;
+      }
+
+      .detail-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 16px;
+        line-height: 1.6;
+
+        .egg-list {
+          list-style: disc inside;
+          margin-top: 4px;
+          padding-left: 16px;
+
+          li {
+            margin-bottom: 4px;
+          }
+        }
+      }
+
+      .close-btn {
+        display: block;
+        margin: 0 auto;
+        padding: 6px 16px;
+        background: transparent;
+        border: 1px solid #ff3366;
+        border-radius: 4px;
+        color: #ff3366;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(255, 51, 102, 0.1);
+        }
+      }
+    }
+  }
+
+  // 移动端适配（≤768px）
+  @media (max-width: 768px) {
+    .chat-container {
+      width: 100%;
+      margin: 0;
+      padding: 8px;
+
+      .stats-panel {
+        display: none;
+      }
+    }
+
+    .bubble {
+      padding: 8px 12px;
+      font-size: 14px;
+      max-width: 85%;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+    }
+
+    .input-area {
+      flex-direction: column;
+      gap: 6px;
+
+      button {
+        width: 100%;
+      }
+
+      .Alldetail-btn {
+        display: block;
+      }
+    }
+
+    .carousel {
+      display: none;
+    }
   }
 }
 </style>
