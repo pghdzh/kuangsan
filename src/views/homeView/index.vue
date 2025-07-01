@@ -4,11 +4,24 @@
     <section class="hero">
       <!-- Canvas 层 -->
       <canvas ref="canvasEl" class="rose-canvas"></canvas>
+      <div class="announcement">
+        <a
+          href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html"
+          target="_blank"
+          rel="noopener"
+          aria-label="应援时崎狂三 B 萌战"
+        >
+        【应援战役】时崎狂三 B萌将于 7 月 2 日正式开启！点击速来应援 ↗
+        </a>
+      </div>
+
       <div class="hero-overlay">
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
+          <router-link to="/overview" class="btn" aria-label="角色概览"
+            >角色概览</router-link
+          >
         </div>
       </div>
       <!-- 时钟齿轮装饰 -->
@@ -18,14 +31,20 @@
       <div class="ranking-list">
         <h3>充电鸣谢榜</h3>
         <div class="scroll-list">
-          <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
+          <div
+            class="rank-item"
+            v-for="(item, idx) in ranking"
+            :key="item.name"
+          >
             <span class="rank">{{ idx + 1 }}</span>
             <span class="name">{{ item.name }}</span>
             <span class="value">{{ item.value }}</span>
           </div>
         </div>
         <div class="tips">
-          <p>当前粉丝：<span class="highlight">{{ fansCount }}</span> / 目标 <span class="highlight">600</span> 粉丝开启抽奖（流麻、透光浮雕）
+          <p>
+            当前粉丝：<span class="highlight">{{ fansCount }}</span> / 目标
+            <span class="highlight">600</span> 粉丝开启抽奖（流麻、透光浮雕）
           </p>
           <p>根据充电量增加获奖权重</p>
         </div>
@@ -38,7 +57,6 @@
           <div class="thank-item">翎蘊</div>
           <div class="thank-item">神乐三三</div>
           <div class="thank-item">doMGameMaker</div>
-
         </div>
       </div>
     </section>
@@ -52,13 +70,22 @@
             <stop offset="100%" stop-color="#800000" />
           </linearGradient>
         </defs>
-        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
+        <path
+          d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z"
+          fill="url(#waveGrad3)"
+        />
       </svg>
       <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
+        <path
+          d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z"
+          fill="rgba(255,79,79,0.6)"
+        />
       </svg>
       <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
+        <path
+          d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z"
+          fill="rgba(255,79,79,0.3)"
+        />
       </svg>
     </footer>
   </div>
@@ -67,20 +94,16 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import rose from "@/assets/rose.png";
-import { getBiliFansCount } from '@/api/modules/bilbilReq'
+import { getBiliFansCount } from "@/api/modules/bilbilReq";
 // 排行榜示例数据
 interface RankItem {
   name: string;
   value: number;
 }
-const ranking = ref<RankItem[]>([
-  { name: '三三Night', value: 4.03 },
-]);
+const ranking = ref<RankItem[]>([{ name: "三三Night", value: 4.03 }]);
 
 // 示例：粉丝数
-const fansCount = ref(423);
-
-
+const fansCount = ref(0);
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 let ctx: CanvasRenderingContext2D;
@@ -192,16 +215,15 @@ function tick(now: number) {
 }
 
 onMounted(async () => {
-
   try {
     const res = await getBiliFansCount();
-    if (res.code === 0) {
+    if (res.success) {
       fansCount.value = res.data.follower;
     } else {
-      console.error('获取粉丝数失败：', res.message);
+      console.error("获取粉丝数失败：", res.message);
     }
   } catch (err) {
-    console.error('请求出错：', err);
+    console.error("请求出错：", err);
   }
 
   const canvas = canvasEl.value!;
@@ -235,6 +257,48 @@ onBeforeUnmount(() => {
       z-index: 1;
     }
 
+    .announcement {
+      position: absolute;
+      top: 68px;
+      left: 16px;
+      padding: 8px 12px;
+      background: rgba(40, 10, 10, 0.7);
+      border: 1px solid rgba(232, 190, 190, 0.8);
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(209, 75, 75, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 20;
+      animation: floatAnnounce 3s ease-in-out infinite alternate;
+
+      a {
+        color: #ffb86c;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        transition: color 0.3s, text-shadow 0.3s;
+
+        &:hover {
+          color: #ffd700;
+          text-shadow: 1px 1px 4px rgba(255, 215, 0, 0.8);
+        }
+
+        &::after {
+          content: " ↗";
+          font-size: 0.9rem;
+        }
+      }
+    }
+
+    @keyframes floatAnnounce {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(-4px);
+      }
+    }
+
     .hero-overlay {
       position: relative;
       z-index: 2;
@@ -251,7 +315,8 @@ onBeforeUnmount(() => {
         text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6)
+          forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -274,9 +339,11 @@ onBeforeUnmount(() => {
             width: 60px;
             height: 2px;
             margin: 12px auto 0;
-            background: linear-gradient(90deg,
-                rgba(232, 190, 190, 0),
-                rgba(232, 190, 190, 1));
+            background: linear-gradient(
+              90deg,
+              rgba(232, 190, 190, 0),
+              rgba(232, 190, 190, 1)
+            );
           }
         }
 
@@ -328,7 +395,7 @@ onBeforeUnmount(() => {
 
       h3 {
         margin: 0 0 12px;
-        font-family: 'Cinzel Decorative', serif;
+        font-family: "Cinzel Decorative", serif;
         font-size: 1.5rem;
         text-align: center;
         text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
@@ -346,7 +413,11 @@ onBeforeUnmount(() => {
         justify-content: space-between;
         margin: 6px 0;
         padding: 6px 10px;
-        background: linear-gradient(135deg, rgba(209, 75, 75, 0.3), rgba(128, 0, 0, 0.3));
+        background: linear-gradient(
+          135deg,
+          rgba(209, 75, 75, 0.3),
+          rgba(128, 0, 0, 0.3)
+        );
         border-radius: 12px;
         font-size: 0.95rem;
         font-weight: 500;
@@ -373,7 +444,7 @@ onBeforeUnmount(() => {
         }
 
         .rank {
-          font-family: 'Cinzel Decorative', serif;
+          font-family: "Cinzel Decorative", serif;
           font-size: 1.1rem;
           width: 24px;
           text-align: center;
@@ -472,15 +543,16 @@ onBeforeUnmount(() => {
           pointer-events: none;
           z-index: 5;
         }
-
       }
 
       .thank-item {
         margin: 8px 0;
         padding: 8px 12px;
-        background: linear-gradient(135deg,
-            rgba(209, 75, 75, 0.4),
-            rgba(128, 0, 0, 0.4));
+        background: linear-gradient(
+          135deg,
+          rgba(209, 75, 75, 0.4),
+          rgba(128, 0, 0, 0.4)
+        );
         border: 1px solid rgba(209, 75, 75, 0.8);
         border-radius: 24px;
         text-align: center;
@@ -532,7 +604,6 @@ onBeforeUnmount(() => {
         }
       }
 
-
       /* 徽章浮动：小幅上下漂浮与轻微旋转 */
       @keyframes float {
         0% {
@@ -543,11 +614,7 @@ onBeforeUnmount(() => {
           transform: translateY(-6px) rotateZ(-2deg);
         }
       }
-
-
     }
-
-
   }
 
   .footer-wave-3 {
@@ -607,7 +674,6 @@ onBeforeUnmount(() => {
   }
 
   @keyframes arrowBounce {
-
     0%,
     100% {
       transform: translateY(0) rotate(-45deg);
@@ -624,7 +690,16 @@ onBeforeUnmount(() => {
   .home-container .hero .hero-overlay .hero-text {
     width: 80%;
   }
+  .home-container .hero .announcement {
+    top: 68px;
+    left: 0px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
 
+    a {
+      font-size: 0.8rem;
+    }
+  }
   .hero .thank-list {
     display: none;
   }

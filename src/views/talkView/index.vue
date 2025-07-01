@@ -2,8 +2,13 @@
   <div class="chat-page">
     <!-- 背景轮播放在最底层 -->
     <div class="carousel">
-      <img v-for="(src, idx) in randomFive" :key="idx" :src="src" class="carousel-image"
-        :class="{ active: idx === currentIndex }" />
+      <img
+        v-for="(src, idx) in randomFive"
+        :key="idx"
+        :src="src"
+        class="carousel-image"
+        :class="{ active: idx === currentIndex }"
+      />
     </div>
     <div class="chat-container">
       <!-- 统计面板 -->
@@ -14,7 +19,9 @@
           总对话次数：<span>{{ stats.totalChats }}</span>
         </div>
         <div class="stat-item">
-          首次使用：<span>{{ new Date(stats.firstTimestamp).toISOString().slice(0, 10) }}</span>
+          首次使用：<span>{{
+            new Date(stats.firstTimestamp).toISOString().slice(0, 10)
+          }}</span>
         </div>
         <div class="stat-item">
           活跃天数：<span>{{ stats.activeDates.length }}</span> 天
@@ -26,7 +33,11 @@
       </div>
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
+          <div
+            v-for="msg in chatLog"
+            :key="msg.id"
+            :class="['message', msg.role, { error: msg.isError }]"
+          >
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -47,22 +58,48 @@
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
         <!-- 输入框 -->
-        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="向时崎狂三提问…"
+          :disabled="loading"
+          @keydown="handleKeydown"
+        />
         <!-- 清空 & 语音 图标按钮组 -->
         <div class="btn-group">
-          <button type="button" class="clear-btn" @click="clearChat" :disabled="loading" title="清空对话">
+          <button
+            type="button"
+            class="clear-btn"
+            @click="clearChat"
+            :disabled="loading"
+            title="清空对话"
+          >
             ✖
           </button>
-          <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled" title="切换语音">
+          <button
+            type="button"
+            class="voice-btn"
+            @click="isVoiceEnabled = !isVoiceEnabled"
+            title="切换语音"
+          >
             {{ isVoiceEnabled ? "🔊" : "🔇" }}
           </button>
         </div>
         <!-- 发送主按钮 -->
-        <button type="submit" class="send-btn" :disabled="!input.trim() || loading">
+        <button
+          type="submit"
+          class="send-btn"
+          :disabled="!input.trim() || loading"
+        >
           发送
         </button>
         <!-- 统计数据按钮 -->
-        <button type="button" class="Alldetail-btn" @click="showModal = true" title="查看统计">
+        <button
+          type="button"
+          class="Alldetail-btn"
+          @click="showModal = true"
+          title="查看统计"
+        >
           统计数据
         </button>
       </form>
@@ -73,16 +110,22 @@
       <div class="modal-content">
         <h3>详细统计</h3>
         <ul class="detail-list">
-          <li> 总对话次数：{{ stats.totalChats }}</li>
-          <li> 首次使用：{{ new Date(stats.firstTimestamp).toISOString().slice(0, 10) }}</li>
-          <li> 活跃天数：{{ stats.activeDates.length }} 天</li>
-          <li> 今日对话：{{ stats.dailyChats[today] || 0 }} 次</li>
+          <li>总对话次数：{{ stats.totalChats }}</li>
+          <li>
+            首次使用：{{
+              new Date(stats.firstTimestamp).toISOString().slice(0, 10)
+            }}
+          </li>
+          <li>活跃天数：{{ stats.activeDates.length }} 天</li>
+          <li>今日对话：{{ stats.dailyChats[today] || 0 }} 次</li>
           <li>总使用时长：{{ formatDuration(stats.totalTime) }}</li>
           <li>当前连续活跃：{{ stats.currentStreak }} 天</li>
           <li>最长连续活跃：{{ stats.longestStreak }} 天</li>
           <li>
-            最活跃日：{{ stats.mostActiveDay }}
-            （{{ stats.dailyChats[stats.mostActiveDay] || 0 }} 次）
+            最活跃日：{{ stats.mostActiveDay }} （{{
+              stats.dailyChats[stats.mostActiveDay] || 0
+            }}
+            次）
           </li>
           <li>彩蛋统计：</li>
           <ul class="egg-list">
@@ -116,23 +159,24 @@ const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
 
 // 本地存储键名
-const STORAGE_STATS_KEY = 'kurumi_chat_stats';
-const showModal = ref(false)
+const STORAGE_STATS_KEY = "kurumi_chat_stats";
+const showModal = ref(false);
 // Stats 类型声明，确保所有字段都有默认值
 interface Stats {
-  firstTimestamp: number;                       // 首次使用时间戳
-  totalChats: number;                           // 总对话次数
-  activeDates: string[];                        // 有发言的日期列表（yyyy‑mm‑dd）
-  dailyChats: Record<string, number>;           // 每日对话次数
-  currentStreak: number;                        // 当前连续活跃天数
-  longestStreak: number;                        // 历史最长连续活跃天数
-  eggCounts: {                                  // 彩蛋触发次数
+  firstTimestamp: number; // 首次使用时间戳
+  totalChats: number; // 总对话次数
+  activeDates: string[]; // 有发言的日期列表（yyyy‑mm‑dd）
+  dailyChats: Record<string, number>; // 每日对话次数
+  currentStreak: number; // 当前连续活跃天数
+  longestStreak: number; // 历史最长连续活跃天数
+  eggCounts: {
+    // 彩蛋触发次数
     encourage: number;
     noInput: number;
     milestone: number;
   };
-  totalTime: number;                            // 累计使用时长（毫秒）
-  mostActiveDay: string;                        // 最活跃日期（yyyy‑mm‑dd）
+  totalTime: number; // 累计使用时长（毫秒）
+  mostActiveDay: string; // 最活跃日期（yyyy‑mm‑dd）
 }
 
 // 默认值，用于补齐本地存储中可能缺失的字段
@@ -156,7 +200,7 @@ function loadStats(): Stats {
       const parsed = JSON.parse(saved);
       return { ...defaultStats, ...parsed };
     } catch {
-      console.warn('加载统计数据失败，使用默认值');
+      console.warn("加载统计数据失败，使用默认值");
     }
   }
   return { ...defaultStats };
@@ -182,11 +226,13 @@ function updateActive(date: string) {
 }
 function updateStreak() {
   const dates = [...stats.activeDates].sort();
-  let curr = 0, max = stats.longestStreak, prevTs = 0;
+  let curr = 0,
+    max = stats.longestStreak,
+    prevTs = 0;
   const todayStr = new Date().toISOString().slice(0, 10);
-  dates.forEach(d => {
+  dates.forEach((d) => {
     const ts = new Date(d).getTime();
-    if (prevTs && (ts - prevTs) === 86400000) curr++;
+    if (prevTs && ts - prevTs === 86400000) curr++;
     else curr = 1;
     max = Math.max(max, curr);
     prevTs = ts;
@@ -201,15 +247,19 @@ function updateDaily(date: string) {
 }
 
 // 记录彩蛋触发
-function recordEgg(type: 'encourage' | 'noInput' | 'milestone') {
+function recordEgg(type: "encourage" | "noInput" | "milestone") {
   stats.eggCounts[type]++;
 }
 
 // 计算最活跃日
 function mostActiveDay(): string {
-  let day = '', max = 0;
+  let day = "",
+    max = 0;
   for (const [d, c] of Object.entries(stats.dailyChats)) {
-    if (c > max) { max = c; day = d; }
+    if (c > max) {
+      max = c;
+      day = d;
+    }
   }
   return day || defaultStats.mostActiveDay;
 }
@@ -222,7 +272,7 @@ function formatDuration(ms: number): string {
   return h ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
 }
 
-// —— Vue 响应式状态 —— 
+// —— Vue 响应式状态 ——
 const stats = reactive<Stats>(loadStats());
 const today = ref(new Date().toISOString().slice(0, 10));
 // 会话开始时间，用于计算本次时长
@@ -367,7 +417,7 @@ function checkMilestones(): boolean {
 // 2. 触发彩蛋的方法（随机挑选、打标记）
 function triggerNoInputEgg() {
   const egg = noInputEggs[Math.floor(Math.random() * noInputEggs.length)];
-  recordEgg('noInput')
+  recordEgg("noInput");
   // 播放对应语音
   playVoice(egg.file.replace(".mp3", ""));
   // 推入气泡，标记 isEgg: true
@@ -440,7 +490,7 @@ async function sendMessage() {
       // 随机挑一条
       const egg =
         encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
-      recordEgg('encourage')
+      recordEgg("encourage");
       // 播放对应语音（不带 .mp3 后缀）
       playVoice(egg.file.replace(".mp3", ""));
       // 推入带标记的彩蛋消息
@@ -524,7 +574,6 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
-
   scrollToBottom();
   resetIdleTimer();
   // 2. 每 5 秒切换一次
@@ -553,7 +602,6 @@ onUnmounted(() => {
   flex-direction: column;
 
   @keyframes gradient-flow {
-
     0%,
     100% {
       background-position: 0% 50%;
@@ -733,7 +781,6 @@ onUnmounted(() => {
     }
 
     @keyframes blink {
-
       0%,
       100% {
         opacity: 0;
@@ -856,32 +903,59 @@ onUnmounted(() => {
     z-index: 1000;
 
     .modal-content {
-      background: #1a1a1a;
-      padding: 20px;
-      border-radius: 12px;
-      width: 300px;
+      background: rgba(26, 26, 26, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 51, 102, 0.3);
+      border-radius: 16px;
+      padding: 24px;
+      width: 320px;
       color: #fff;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-
+      box-shadow: 0 0 20px rgba(255, 0, 51, 0.2);
+      animation: fadeInUp 0.3s ease;
       h3 {
-        margin-bottom: 12px;
-        font-size: 18px;
+        margin-bottom: 16px;
+        font-size: 20px;
+        font-weight: bold;
         text-align: center;
+        color: #ff3366;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(255, 51, 102, 0.2);
+        padding-bottom: 8px;
       }
 
       .detail-list {
         list-style: none;
         padding: 0;
-        margin: 0 0 16px;
+        margin: 0 0 20px;
         line-height: 1.6;
+        font-size: 14px;
+
+        li {
+          margin-bottom: 8px;
+          color: #f3f3f3;
+
+          &:nth-child(odd) {
+            color: #ffccd5;
+          }
+        }
 
         .egg-list {
-          list-style: disc inside;
-          margin-top: 4px;
-          padding-left: 16px;
+          list-style: none;
+          margin-top: 8px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px dashed rgba(255, 51, 102, 0.3);
 
           li {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            color: #ff99aa;
+            font-size: 13px;
+
+            &::before {
+              content: "✨ ";
+              color: #ff6699;
+            }
           }
         }
       }
@@ -889,18 +963,31 @@ onUnmounted(() => {
       .close-btn {
         display: block;
         margin: 0 auto;
-        padding: 6px 16px;
+        padding: 8px 20px;
         background: transparent;
         border: 1px solid #ff3366;
-        border-radius: 4px;
+        border-radius: 6px;
         color: #ff3366;
         cursor: pointer;
-        transition: background 0.2s;
+        font-weight: bold;
+        transition: all 0.3s ease;
 
         &:hover {
           background: rgba(255, 51, 102, 0.1);
+          transform: scale(1.05);
+          box-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
         }
       }
+    }
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
 
