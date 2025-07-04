@@ -1,17 +1,17 @@
 <template>
   <div class="home-container">
     <!-- 主视觉区 -->
+    <div class="mobile-header-btns">
+      <button @click="showRanking = true" class="mobile-btn">充电榜</button>
+      <button @click="showThank = true" class="mobile-btn">感谢名单</button>
+    </div>
     <section class="hero">
       <!-- Canvas 层 -->
       <canvas ref="canvasEl" class="rose-canvas"></canvas>
       <div class="announcement">
-        <a
-          href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html"
-          target="_blank"
-          rel="noopener"
-          aria-label="应援时崎狂三 B 萌战"
-        >
-        【应援战役】时崎狂三 B萌将于 7 月 2 日正式开启！点击速来应援 ↗
+        <a href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html" target="_blank" rel="noopener"
+          aria-label="应援时崎狂三 B 萌战">
+          【应援战役】时崎狂三 B萌提名期7月2-4日,点击速来应援 ↗
         </a>
       </div>
 
@@ -19,9 +19,7 @@
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn" aria-label="角色概览"
-            >角色概览</router-link
-          >
+          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
         </div>
       </div>
       <!-- 时钟齿轮装饰 -->
@@ -31,11 +29,7 @@
       <div class="ranking-list">
         <h3>充电鸣谢榜</h3>
         <div class="scroll-list">
-          <div
-            class="rank-item"
-            v-for="(item, idx) in ranking"
-            :key="item.name"
-          >
+          <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
             <span class="rank">{{ idx + 1 }}</span>
             <span class="name">{{ item.name }}</span>
             <span class="value">{{ item.value }}</span>
@@ -52,11 +46,9 @@
       <div class="thank-list">
         <h3>功能提议感谢名单</h3>
         <div class="scroll-list">
-          <div class="thank-item">莺时零散</div>
-          <div class="thank-item">kurumi</div>
-          <div class="thank-item">翎蘊</div>
-          <div class="thank-item">神乐三三</div>
-          <div class="thank-item">doMGameMaker</div>
+          <div class="thank-item" v-for="name in thankList" :key="name">
+            {{ name }}
+          </div>
         </div>
       </div>
     </section>
@@ -70,24 +62,63 @@
             <stop offset="100%" stop-color="#800000" />
           </linearGradient>
         </defs>
-        <path
-          d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z"
-          fill="url(#waveGrad3)"
-        />
+        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
       </svg>
       <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.6)"
-        />
+        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
       </svg>
       <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.3)"
-        />
+        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
       </svg>
     </footer>
+
+    <!-- 弹窗：充电榜 -->
+    <transition name="fade">
+      <div class="modal-mask" v-if="showRanking" @click.self="showRanking = false">
+        <div class="modal-wrapper">
+          <div class="modal-header">
+            <h3>充电鸣谢榜</h3>
+            <span class="close" @click="showRanking = false">×</span>
+          </div>
+          <div class="modal-body">
+            <!-- 直接复用 .ranking-list 的内容 -->
+            <div class="scroll-list">
+              <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
+                <span class="rank">{{ idx + 1 }}</span>
+                <span class="name">{{ item.name }}</span>
+                <span class="value">{{ item.value }}</span>
+              </div>
+            </div>
+            <div class="tips">
+              <p>
+                当前粉丝：<span class="highlight">{{ fansCount }}</span> / 目标
+                <span class="highlight">600</span> 粉丝开启抽奖（流麻、透光浮雕）
+              </p>
+              <p>根据充电量增加获奖权重</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 弹窗：感谢名单 -->
+    <transition name="fade">
+      <div class="modal-mask" v-if="showThank" @click.self="showThank = false">
+        <div class="modal-wrapper">
+          <div class="modal-header">
+            <h3>功能提议感谢名单</h3>
+            <span class="close" @click="showThank = false">×</span>
+          </div>
+          <div class="modal-body">
+            <div class="scroll-list thank-scroll">
+              <div class="thank-item" v-for="name in thankList" :key="name">
+                {{ name }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -100,8 +131,11 @@ interface RankItem {
   name: string;
   value: number;
 }
-const ranking = ref<RankItem[]>([{ name: "三三Night", value: 4.03 }]);
-
+const ranking = ref<RankItem[]>([{ name: "三三Night", value: 4.03 }, { name: "正是这么", value: 3.36 }, { name: "舞溪酱", value: 3.36 }]);
+const thankList = ref(['莺时零散', 'kurumi', '翎蘊', '神乐三三', 'doMGameMaker', '尹忶'])
+// 控制弹窗显隐
+const showRanking = ref(false)
+const showThank = ref(false)
 // 示例：粉丝数
 const fansCount = ref(0);
 
@@ -243,6 +277,10 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .home-container {
+  .mobile-header-btns {
+    display: none;
+  }
+
   .hero {
     position: relative;
     width: 100%;
@@ -294,6 +332,7 @@ onBeforeUnmount(() => {
       0% {
         transform: translateY(0);
       }
+
       100% {
         transform: translateY(-4px);
       }
@@ -315,8 +354,7 @@ onBeforeUnmount(() => {
         text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6)
-          forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -339,11 +377,9 @@ onBeforeUnmount(() => {
             width: 60px;
             height: 2px;
             margin: 12px auto 0;
-            background: linear-gradient(
-              90deg,
-              rgba(232, 190, 190, 0),
-              rgba(232, 190, 190, 1)
-            );
+            background: linear-gradient(90deg,
+                rgba(232, 190, 190, 0),
+                rgba(232, 190, 190, 1));
           }
         }
 
@@ -407,64 +443,6 @@ onBeforeUnmount(() => {
         overflow-y: auto;
       }
 
-      .rank-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 6px 0;
-        padding: 6px 10px;
-        background: linear-gradient(
-          135deg,
-          rgba(209, 75, 75, 0.3),
-          rgba(128, 0, 0, 0.3)
-        );
-        border-radius: 12px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        transition: transform 0.3s, box-shadow 0.3s;
-        cursor: default;
-        animation: float 4s ease-in-out infinite alternate;
-
-        /* 不同序号随机时长 */
-        &:nth-child(4n + 1) {
-          animation-duration: 5s;
-        }
-
-        &:nth-child(4n + 2) {
-          animation-duration: 6s;
-        }
-
-        &:nth-child(4n + 3) {
-          animation-duration: 4.5s;
-        }
-
-        &:nth-child(4n) {
-          animation-duration: 5.5s;
-        }
-
-        .rank {
-          font-family: "Cinzel Decorative", serif;
-          font-size: 1.1rem;
-          width: 24px;
-          text-align: center;
-          color: #ffd700;
-        }
-
-        .name {
-          flex: 1;
-          margin: 0 8px;
-        }
-
-        .value {
-          font-style: italic;
-        }
-
-        &:hover {
-          transform: translateZ(5px) scale(1.05);
-          box-shadow: 0 6px 16px rgba(209, 75, 75, 0.8);
-        }
-      }
 
       .tips {
         padding: 8px 10px;
@@ -542,52 +520,6 @@ onBeforeUnmount(() => {
           height: 20%;
           pointer-events: none;
           z-index: 5;
-        }
-      }
-
-      .thank-item {
-        margin: 8px 0;
-        padding: 8px 12px;
-        background: linear-gradient(
-          135deg,
-          rgba(209, 75, 75, 0.4),
-          rgba(128, 0, 0, 0.4)
-        );
-        border: 1px solid rgba(209, 75, 75, 0.8);
-        border-radius: 24px;
-        text-align: center;
-        font-size: 0.95rem;
-        font-weight: 500;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        transform-style: preserve-3d;
-        transition: transform 0.3s;
-        cursor: default;
-        position: relative;
-        z-index: 2;
-        /* 浮动效果 */
-        animation: float 4s ease-in-out infinite alternate;
-
-        /* 不同序号随机时长 */
-        &:nth-child(4n + 1) {
-          animation-duration: 5s;
-        }
-
-        &:nth-child(4n + 2) {
-          animation-duration: 6s;
-        }
-
-        &:nth-child(4n + 3) {
-          animation-duration: 4.5s;
-        }
-
-        &:nth-child(4n) {
-          animation-duration: 5.5s;
-        }
-
-        &:hover {
-          transform: translateZ(10px) scale(1.08);
-          box-shadow: 0 6px 16px rgba(209, 75, 75, 0.8);
         }
       }
 
@@ -674,6 +606,7 @@ onBeforeUnmount(() => {
   }
 
   @keyframes arrowBounce {
+
     0%,
     100% {
       transform: translateY(0) rotate(-45deg);
@@ -685,11 +618,14 @@ onBeforeUnmount(() => {
   }
 }
 
+
+
 /* 小屏适配 */
 @media (max-width: 767px) {
   .home-container .hero .hero-overlay .hero-text {
     width: 80%;
   }
+
   .home-container .hero .announcement {
     top: 68px;
     left: 0px;
@@ -700,12 +636,226 @@ onBeforeUnmount(() => {
       font-size: 0.8rem;
     }
   }
-  .hero .thank-list {
-    display: none;
+
+  .home-container .mobile-header-btns {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    background: rgba(10, 5, 5, 0.8);
+    position: fixed;
+    top: 120px;
+    left: 0;
+    right: 0;
+    z-index: 30;
+
+    /* 按钮样式保持不变 */
+    .mobile-btn {
+      flex: 1;
+      margin: 0 8px;
+      padding: 8px 0;
+      background: #d14b4b;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      border: none;
+    }
   }
 
+  /* 隐藏原本侧边的列表 */
+  .thank-list,
   .ranking-list {
-    display: none;
+    display: none !important;
+  }
+
+  /* Modal 通用样式 */
+  .modal-mask {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .modal-wrapper {
+      width: 90%;
+      max-height: 80%;
+      background: rgba(10, 5, 5, 0.9);
+      border-radius: 12px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: rgba(40, 10, 10, 0.8);
+
+        h3 {
+          margin: 0;
+          font-size: 1.2rem;
+          color: #e8bebe;
+        }
+
+        .close {
+          font-size: 1.4rem;
+          cursor: pointer;
+          color: #ffd700;
+        }
+      }
+
+      .modal-body {
+        padding: 8px 12px;
+        flex: 1;
+        overflow-y: auto;
+
+        /* 复用原有列表样式 */
+        .scroll-list {
+          background: rgba(10, 5, 5, 0.6);
+          border: 2px solid rgba(232, 190, 190, 0.6);
+          border-radius: 16px;
+          box-shadow: 0 0 16px rgba(209, 75, 75, 0.8), 0 8px 24px rgba(0, 0, 0, 0.7);
+          color: #e8bebe;
+          backdrop-filter: blur(4px);
+          animation: glowBorder 3s ease-in-out infinite alternate;
+
+        }
+
+        .tips {
+          padding: 8px 10px;
+          background: rgba(32, 16, 16, 0.7);
+          border-top: 1px solid rgba(232, 190, 190, 0.4);
+          font-size: 0.9rem;
+          line-height: 1.4;
+          text-align: center;
+          color: #e8bebe;
+
+          .highlight {
+            color: #ffb86c;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+
+  }
+
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity .3s;
+  }
+
+  .fade-enter,
+  .fade-leave-to {
+    opacity: 0;
+  }
+}
+
+//公共样式
+.rank-item {
+  /* 可适当复用前面的动画/样式 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+  padding: 6px 10px;
+  background: linear-gradient(135deg,
+      rgba(209, 75, 75, 0.3),
+      rgba(128, 0, 0, 0.3));
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: default;
+  animation: float 4s ease-in-out infinite alternate;
+
+  /* 不同序号随机时长 */
+  &:nth-child(4n + 1) {
+    animation-duration: 5s;
+  }
+
+  &:nth-child(4n + 2) {
+    animation-duration: 6s;
+  }
+
+  &:nth-child(4n + 3) {
+    animation-duration: 4.5s;
+  }
+
+  &:nth-child(4n) {
+    animation-duration: 5.5s;
+  }
+
+  .rank {
+    font-family: "Cinzel Decorative", serif;
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    color: #ffd700;
+  }
+
+  .name {
+    flex: 1;
+    margin: 0 8px;
+  }
+
+  .value {
+    font-style: italic;
+  }
+
+  &:hover {
+    transform: translateZ(5px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(209, 75, 75, 0.8);
+  }
+}
+
+.thank-item {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: linear-gradient(135deg,
+      rgba(209, 75, 75, 0.4),
+      rgba(128, 0, 0, 0.4));
+  border: 1px solid rgba(209, 75, 75, 0.8);
+  border-radius: 24px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  transform-style: preserve-3d;
+  transition: transform 0.3s;
+  cursor: default;
+  position: relative;
+  z-index: 2;
+  /* 浮动效果 */
+  animation: float 4s ease-in-out infinite alternate;
+
+  /* 不同序号随机时长 */
+  &:nth-child(4n + 1) {
+    animation-duration: 5s;
+  }
+
+  &:nth-child(4n + 2) {
+    animation-duration: 6s;
+  }
+
+  &:nth-child(4n + 3) {
+    animation-duration: 4.5s;
+  }
+
+  &:nth-child(4n) {
+    animation-duration: 5.5s;
+  }
+
+  &:hover {
+    transform: translateZ(10px) scale(1.08);
+    box-shadow: 0 6px 16px rgba(209, 75, 75, 0.8);
   }
 }
 </style>

@@ -11,20 +11,9 @@
         </button>
       </div>
       <div class="gallery-grid">
-        <div
-          v-for="(img, index) in images"
-          :key="img.id"
-          class="card"
-          @click="openLightbox(index)"
-          ref="cards"
-        >
+        <div v-for="(img, index) in images" :key="img.id" class="card" @click="openLightbox(index)" ref="cards">
           <div class="card-inner">
-            <img
-              :src="img.src"
-              :alt="img.alt"
-              loading="lazy"
-              @load="onImageLoad($event)"
-            />
+            <img :src="img.src" :alt="img.alt" loading="lazy" @load="onImageLoad($event)" />
             <div class="overlay">
               <span>查看大图</span>
             </div>
@@ -42,19 +31,19 @@
       <div class="finished" v-if="finished">已全部加载</div>
     </section>
     <aside class="ranking-panel">
-      <h3 class="ranking-title">上传排行榜</h3>
-      <ul class="ranking-list">
-        <li
-          v-for="(item, idx) in rankingList"
-          :key="idx"
-          class="ranking-item"
-          :class="`rank-${idx + 1}`"
-        >
-          <span class="rank">{{ idx + 1 }}</span>
-          <span class="name">{{ item.nickname }}</span>
-          <span class="count">{{ item.count }} 张</span>
-        </li>
-      </ul>
+      <div class="panel-header" @click="expanded = !expanded">
+        <h3 class="ranking-title">上传排行榜</h3>
+        <span class="toggle-icon">{{ expanded ? '▾' : '▸' }}</span>
+      </div>
+      <transition name="fade">
+        <ul v-if="expanded" class="ranking-list">
+          <li v-for="(item, idx) in rankingList" :key="idx" class="ranking-item" :class="`rank-${idx + 1}`">
+            <span class="rank">{{ idx + 1 }}</span>
+            <span class="name">{{ item.nickname }}</span>
+            <span class="count">{{ item.count }} 张</span>
+          </li>
+        </ul>
+      </transition>
     </aside>
     <!-- Lightbox Modal -->
     <div v-if="lightboxOpen" class="lightbox" @click.self="closeLightbox">
@@ -65,11 +54,7 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <div
-      v-if="uploadModalOpen"
-      class="upload-modal-overlay"
-      @click.self="closeUploadModal"
-    >
+    <div v-if="uploadModalOpen" class="upload-modal-overlay" @click.self="closeUploadModal">
       <div class="upload-modal">
         <h3>批量上传图片</h3>
         <div class="tip-container">
@@ -90,13 +75,7 @@
         </label>
         <label>
           选择图片（最多 {{ remaining }} 张）：
-          <input
-            ref="fileInput"
-            type="file"
-            multiple
-            accept="image/*"
-            @change="handleFileSelect"
-          />
+          <input ref="fileInput" type="file" multiple accept="image/*" @change="handleFileSelect" />
         </label>
         <p class="tip" v-if="selectedFiles.length">
           已选 {{ selectedFiles.length }} 张
@@ -111,13 +90,8 @@
     </div>
 
     <div class="floating-chibis">
-      <img
-        v-for="(pet, i) in chibiList"
-        :key="i"
-        :src="pet.src"
-        :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
-        class="chibi-img"
-      />
+      <img v-for="(pet, i) in chibiList" :key="i" :src="pet.src" :style="{ top: pet.top + 'px', left: pet.left + 'px' }"
+        class="chibi-img" />
     </div>
   </div>
 </template>
@@ -130,7 +104,7 @@ import { gsap } from "gsap"; // ← 本地引入
 import { getImagesLikesList, likeImage } from "@/api/modules/imagesLikes";
 import { debounce } from "lodash";
 
-const sortBy = ref<"uploaded_at" | "like_count">("uploaded_at");
+const sortBy = ref<"uploaded_at" | "like_count">("like_count");
 const order = ref<"asc" | "desc">("desc");
 function toggleSort() {
   if (sortBy.value === "uploaded_at") {
@@ -189,6 +163,7 @@ interface RankingItem {
   count: number;
 }
 const rankingList = ref<RankingItem[]>([]);
+const expanded = ref(true)
 
 // 默认分页参数（如不分页可省略）
 const page = 1;
@@ -599,7 +574,7 @@ $highlight: #ffd700;
     margin: 0 auto;
 
     .sort-controls {
-      text-align: center;
+     
       margin: 16px 0;
 
       .sort-btn {
@@ -612,7 +587,7 @@ $highlight: #ffd700;
         font-size: 0.95rem;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         transition: all 0.3s;
-
+        
         &:hover {
           background: #ffd700;
           color: #111;
@@ -635,6 +610,7 @@ $highlight: #ffd700;
         }
 
         &.loaded {
+
           // Blur-up & grayscale removed
           .card-inner img {
             filter: none;
@@ -989,27 +965,43 @@ $highlight: #ffd700;
   }
 
   .ranking-panel {
-    width: 240px;
+    width: 220px;
     padding: 24px 16px;
     margin-left: 24px;
-    background: radial-gradient(
-      circle at top right,
-      rgba(29, 29, 29, 0.9),
-      rgba(13, 13, 13, 0.9)
-    );
+    background: radial-gradient(circle at top right,
+        rgba(29, 29, 29, 0.9),
+        rgba(13, 13, 13, 0.9));
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
     position: fixed;
-    top: 80px;
+    top: 60px;
     right: 24px;
     color: $text;
 
-    .ranking-title {
-      font-size: 1.3rem;
-      color: $accent;
-      text-align: center;
-      margin-bottom: 16px;
-      font-family: "Cinzel Decorative", serif;
+    &.collapsed {
+      // 收起时只保留 header 高度
+      height: auto;
+      padding-bottom: 8px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+
+      .ranking-title {
+        font-size: 1.3rem;
+        color: $accent;
+        font-family: "Cinzel Decorative", serif;
+        margin: 0;
+      }
+
+      .toggle-icon {
+        font-size: 1.2rem;
+        color: $accent;
+        user-select: none;
+      }
     }
 
     .ranking-list {
@@ -1065,13 +1057,19 @@ $highlight: #ffd700;
         }
       }
     }
+
+    /* 简单淡入淡出动画 */
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
   }
 }
 
-/* 小屏适配 */
-@media (max-width: 767px) {
-  .ranking-panel {
-    display: none;
-  }
-}
+
 </style>
