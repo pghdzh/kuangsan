@@ -9,9 +9,13 @@
       <!-- Canvas 层 -->
       <canvas ref="canvasEl" class="rose-canvas"></canvas>
       <div class="announcement">
-        <a href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html" target="_blank" rel="noopener"
-          aria-label="应援时崎狂三 B 萌战">
-          【应援战役】时崎狂三 B萌提名期7月2-4日,点击速来应援 ↗
+        <a
+          href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html"
+          target="_blank"
+          rel="noopener"
+          aria-label="应援时崎狂三 B 萌战"
+        >
+          【应援战役】时崎狂三 B萌海选期7月8-10日,记得去应援三三哦 ↗
         </a>
       </div>
 
@@ -19,7 +23,9 @@
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
+          <router-link to="/overview" class="btn" aria-label="角色概览"
+            >角色概览</router-link
+          >
         </div>
       </div>
       <!-- 时钟齿轮装饰 -->
@@ -29,7 +35,11 @@
       <div class="ranking-list">
         <h3>充电鸣谢榜</h3>
         <div class="scroll-list">
-          <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
+          <div
+            class="rank-item"
+            v-for="(item, idx) in ranking"
+            :key="item.name"
+          >
             <span class="rank">{{ idx + 1 }}</span>
             <span class="name">{{ item.name }}</span>
             <span class="value">{{ item.value }}</span>
@@ -62,19 +72,32 @@
             <stop offset="100%" stop-color="#800000" />
           </linearGradient>
         </defs>
-        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
+        <path
+          d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z"
+          fill="url(#waveGrad3)"
+        />
       </svg>
       <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
+        <path
+          d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z"
+          fill="rgba(255,79,79,0.6)"
+        />
       </svg>
       <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
+        <path
+          d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z"
+          fill="rgba(255,79,79,0.3)"
+        />
       </svg>
     </footer>
 
     <!-- 弹窗：充电榜 -->
     <transition name="fade">
-      <div class="modal-mask" v-if="showRanking" @click.self="showRanking = false">
+      <div
+        class="modal-mask"
+        v-if="showRanking"
+        @click.self="showRanking = false"
+      >
         <div class="modal-wrapper">
           <div class="modal-header">
             <h3>充电鸣谢榜</h3>
@@ -83,7 +106,11 @@
           <div class="modal-body">
             <!-- 直接复用 .ranking-list 的内容 -->
             <div class="scroll-list">
-              <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
+              <div
+                class="rank-item"
+                v-for="(item, idx) in ranking"
+                :key="item.name"
+              >
                 <span class="rank">{{ idx + 1 }}</span>
                 <span class="name">{{ item.name }}</span>
                 <span class="value">{{ item.value }}</span>
@@ -92,7 +119,8 @@
             <div class="tips">
               <p>
                 当前粉丝：<span class="highlight">{{ fansCount }}</span> / 目标
-                <span class="highlight">600</span> 粉丝开启抽奖（流麻、透光浮雕）
+                <span class="highlight">600</span>
+                粉丝开启抽奖（流麻、透光浮雕）
               </p>
               <p>根据充电量增加获奖权重</p>
             </div>
@@ -131,11 +159,24 @@ interface RankItem {
   name: string;
   value: number;
 }
-const ranking = ref<RankItem[]>([{ name: "三三Night", value: 4.03 }, { name: "正是这么", value: 3.36 }, { name: "舞溪酱", value: 3.36 }]);
-const thankList = ref(['莺时零散', 'kurumi', '翎蘊', '神乐三三', 'doMGameMaker', '尹忶'])
+const ranking = ref<RankItem[]>([
+  { name: "星尘AIGC", value: 34.27 },
+  { name: "狂三丢了枪", value: 22.18 },
+  { name: "三三Night", value: 4.03 },
+  { name: "正是这么", value: 3.36 },
+  { name: "舞溪酱", value: 3.36 },
+]);
+const thankList = ref([
+  "莺时零散",
+  "kurumi",
+  "翎蘊",
+  "神乐三三",
+  "doMGameMaker",
+  "尹忶",
+]);
 // 控制弹窗显隐
-const showRanking = ref(false)
-const showThank = ref(false)
+const showRanking = ref(false);
+const showThank = ref(false);
 // 示例：粉丝数
 const fansCount = ref(0);
 
@@ -354,7 +395,8 @@ onBeforeUnmount(() => {
         text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6)
+          forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -377,9 +419,11 @@ onBeforeUnmount(() => {
             width: 60px;
             height: 2px;
             margin: 12px auto 0;
-            background: linear-gradient(90deg,
-                rgba(232, 190, 190, 0),
-                rgba(232, 190, 190, 1));
+            background: linear-gradient(
+              90deg,
+              rgba(232, 190, 190, 0),
+              rgba(232, 190, 190, 1)
+            );
           }
         }
 
@@ -442,7 +486,6 @@ onBeforeUnmount(() => {
         /* 留出约 6rem 高给 tips */
         overflow-y: auto;
       }
-
 
       .tips {
         padding: 8px 10px;
@@ -606,7 +649,6 @@ onBeforeUnmount(() => {
   }
 
   @keyframes arrowBounce {
-
     0%,
     100% {
       transform: translateY(0) rotate(-45deg);
@@ -617,8 +659,6 @@ onBeforeUnmount(() => {
     }
   }
 }
-
-
 
 /* 小屏适配 */
 @media (max-width: 767px) {
@@ -719,11 +759,11 @@ onBeforeUnmount(() => {
           background: rgba(10, 5, 5, 0.6);
           border: 2px solid rgba(232, 190, 190, 0.6);
           border-radius: 16px;
-          box-shadow: 0 0 16px rgba(209, 75, 75, 0.8), 0 8px 24px rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 16px rgba(209, 75, 75, 0.8),
+            0 8px 24px rgba(0, 0, 0, 0.7);
           color: #e8bebe;
           backdrop-filter: blur(4px);
           animation: glowBorder 3s ease-in-out infinite alternate;
-
         }
 
         .tips {
@@ -742,12 +782,11 @@ onBeforeUnmount(() => {
         }
       }
     }
-
   }
 
   .fade-enter-active,
   .fade-leave-active {
-    transition: opacity .3s;
+    transition: opacity 0.3s;
   }
 
   .fade-enter,
@@ -764,9 +803,11 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   margin: 6px 0;
   padding: 6px 10px;
-  background: linear-gradient(135deg,
-      rgba(209, 75, 75, 0.3),
-      rgba(128, 0, 0, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(209, 75, 75, 0.3),
+    rgba(128, 0, 0, 0.3)
+  );
   border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -818,9 +859,11 @@ onBeforeUnmount(() => {
 .thank-item {
   margin: 8px 0;
   padding: 8px 12px;
-  background: linear-gradient(135deg,
-      rgba(209, 75, 75, 0.4),
-      rgba(128, 0, 0, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(209, 75, 75, 0.4),
+    rgba(128, 0, 0, 0.4)
+  );
   border: 1px solid rgba(209, 75, 75, 0.8);
   border-radius: 24px;
   text-align: center;
