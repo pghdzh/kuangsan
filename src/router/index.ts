@@ -33,6 +33,10 @@ const router = createRouter({
       path: "/talk",
       component: () => import("@/views/talkView/index.vue"),
     },
+    {
+      path: "/bookshelf",
+      component: () => import("@/views/bookshelfView/index.vue"),
+    },
   ],
   scrollBehavior() {
     return { top: 0 };

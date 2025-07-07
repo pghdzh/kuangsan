@@ -31,7 +31,8 @@ const links = ref([
   { name: '图库', path: '/gallery' },
   { name: '时间线', path: '/timeline' },
   { name: '留言板', path: '/board' },
-  { name: '对话狂三', path: '/talk' }
+  { name: '对话狂三', path: '/talk' },
+  { name: '对话书架', path: '/bookshelf' }, // 新增
 ])
 
 // 控制移动端菜单开关

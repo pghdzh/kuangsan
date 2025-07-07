@@ -67,6 +67,8 @@
         <button type="button" class="Alldetail-btn" @click="showModal = true" title="查看统计">
           统计数据
         </button>
+
+        <button type="button" class="export-btn" @click="exportChat" :disabled="!chatLog.length">导出对话为txt</button>
       </form>
     </div>
 
@@ -547,8 +549,29 @@ watch(
   },
   { deep: true }
 );
-
-
+//导出对话记录
+function exportChat() {
+  // 将每条消息格式化成“角色：内容”并按行拼接
+  const lines = chatLog.value.map(msg => {
+    const role = msg.role === 'user' ? '你' : '狂三';
+    // 去掉 HTML 标签
+    const text = msg.text.replace(/<[^>]+>/g, '').trim();
+    return `${role}：${text}`;
+  });
+  const content = lines.join('\n');
+  // 创建 blob 并触发下载
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  // 文件名可以加个时间戳
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.download = `对话记录-${date}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 
 function handleBeforeUnload() {
@@ -854,6 +877,20 @@ onBeforeUnmount(() => {
       font-weight: bold;
       cursor: pointer;
       transition: background 0.3s;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .export-btn {
+      margin-left: 8px;
+      padding: 4px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fafafa;
+      cursor: pointer;
 
       &:disabled {
         opacity: 0.5;
