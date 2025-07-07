@@ -395,10 +395,10 @@ function triggerNoInputEgg() {
   resetIdleTimer(); // 重新启动定时器
 }
 
-// 3. 重置／启动 30 秒无输入定时器
+// 3. 重置／启动 180 秒无输入定时器
 function resetIdleTimer() {
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(triggerNoInputEgg, 60 * 1000);
+  idleTimer = setTimeout(triggerNoInputEgg, 180 * 1000);
 }
 
 function loadVoiceSetting() {
@@ -455,7 +455,7 @@ async function sendMessage() {
     // 1. 检查里程碑彩蛋，是否触发
     const hasMilestone = checkMilestones();
     // —— 鼓励彩蛋：30% 概率触发 ——
-    if (!hasMilestone && Math.random() < 0.3) {
+    if (!hasMilestone && Math.random() < 0.1) {
       // 随机挑一条
       const egg =
         encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
