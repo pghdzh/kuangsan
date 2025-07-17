@@ -1,8 +1,12 @@
 <template>
   <div class="chat-page">
     <!-- 背景轮播放在最底层 -->
-    <div class="carousel">
+    <div class="carousel carousel1">
       <img v-for="(src, idx) in randomFive" :key="idx" :src="src" class="carousel-image"
+        :class="{ active: idx === currentIndex }" />
+    </div>
+    <div class="carousel carousel2">
+      <img v-for="(src, idx) in randomFive2" :key="idx" :src="src" class="carousel-image"
         :class="{ active: idx === currentIndex }" />
     </div>
     <div class="chat-container">
@@ -52,7 +56,6 @@
 <script setup lang="ts">
 import {
   ref,
-
   onMounted,
   nextTick,
   watch,
@@ -63,11 +66,17 @@ import { sendMessageToSystem } from "@/api/deepseekApi";
 
 const STORAGE_KEY = "kurumi_chat_log";
 
-// 1. 全量导入，直接映射成 string[]
+// 1. 全量导入横图，直接映射成 string[]
 const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg,webp}", {
   eager: true,
 });
 const allSrcs: string[] = Object.values(modules).map((mod: any) => mod.default);
+
+// 1. 全量导入竖图，直接映射成 string[]
+const modules2 = import.meta.glob("@/assets/images2/*.{jpg,png,jpeg,webp}", {
+  eager: true,
+});
+const allSrcs2: string[] = Object.values(modules2).map((mod: any) => mod.default);
 
 // 2. 洗牌并取 5 张
 function shuffle<T>(arr: T[]): T[] {
@@ -79,6 +88,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 const randomFive = ref<string[]>(shuffle(allSrcs).slice(0, 5));
+const randomFive2 = ref<string[]>(shuffle(allSrcs2).slice(0, 5));
 
 const currentIndex = ref(0);
 let timer: number;
@@ -227,7 +237,7 @@ onMounted(() => {
   scrollToBottom();
   // 2. 每 5 秒切换一次
   timer = window.setInterval(() => {
-    currentIndex.value = (currentIndex.value + 1) % randomFive.value.length;
+    currentIndex.value = (currentIndex.value + 1) % 5;
   }, 5000);
 
 });
@@ -290,6 +300,11 @@ onBeforeUnmount(() => {
         opacity: 1;
       }
     }
+  }
+
+
+  .carousel2 {
+    display: none;
   }
 
   .chat-container {
@@ -556,7 +571,13 @@ onBeforeUnmount(() => {
       }
     }
 
+    .carousel1 {
+      display: none;
+    }
 
+    .carousel2 {
+      display: block;
+    }
   }
 }
 </style>
