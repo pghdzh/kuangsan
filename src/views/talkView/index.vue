@@ -244,7 +244,7 @@ const stats = reactive<Stats>(loadStats());
 const sessionStart = Date.now();
 
 // 1. 全量导入，直接映射成 string[]
-const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg}", {
+const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg,webp}", {
   eager: true,
 });
 const allSrcs: string[] = Object.values(modules).map((mod: any) => mod.default);
@@ -732,7 +732,7 @@ onBeforeUnmount(() => {
       z-index: 10;
 
       &.bot {
-        background-image: url("@/assets/images2/zavatar.jpg");
+        background-image: url("@/assets/images2/zavatar.webp");
         box-shadow: 0 0 12px #ff0033;
       }
 
