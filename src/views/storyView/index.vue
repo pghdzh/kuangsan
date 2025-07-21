@@ -64,7 +64,7 @@ import {
 } from "vue";
 import { sendMessageToSystem } from "@/api/deepseekApi";
 
-const STORAGE_KEY = "kurumi_chat_log";
+const STORAGE_KEY = "kurumi_story_log";
 
 // 1. 全量导入横图，直接映射成 string[]
 const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg,webp}", {
