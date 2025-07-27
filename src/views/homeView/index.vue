@@ -15,7 +15,7 @@
           rel="noopener"
           aria-label="应援时崎狂三 B 萌战"
         >
-          【应援战役】时崎狂三 B萌海选期7月8-10日,记得去应援三三哦 ↗
+          【应援战役】7.29 B萌16强双败赛N组 三三此刻正站在生死边缘——再输一场，就将惨遭淘汰！ ↗
         </a>
       </div>
 
@@ -165,6 +165,7 @@ const ranking = ref<RankItem[]>([
   { name: "三三Night", value: 4.03 },
   { name: "正是这么", value: 3.36 },
   { name: "舞溪酱", value: 3.36 },
+  { name: "狂三3三3三3", value: 1.34 },
 ]);
 const thankList = ref([
   "莺时零散",
