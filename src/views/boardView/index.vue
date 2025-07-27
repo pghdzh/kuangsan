@@ -59,7 +59,7 @@ import { ref, onMounted, nextTick, onUnmounted, computed } from "vue";
 import { getMessageList, createMessage } from "@/api/modules/message";
 
 // 全量导入并随机取五张
-const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg}", {
+const modules = import.meta.glob("@/assets/images/*.{jpg,png,jpeg,webp}", {
   eager: true,
 });
 const allSrcs: string[] = Object.values(modules).map((mod: any) => mod.default);

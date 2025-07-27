@@ -32,20 +32,25 @@ const links = ref([
   { name: '时间线', path: '/timeline' },
   { name: '留言板', path: '/board' },
   { name: '对话狂三', path: '/talk' },
-  { name: '对话书架', path: '/bookshelf' }, // 新增
+  { name: '剧情演绎', path: '/story' },
+  { name: '对话书架', path: '/bookshelf' },
 ])
 
 // 控制移动端菜单开关
 const isOpen = ref(false)
 
-// 实时在线人数
+const siteId = 'kurumi'
+
 const onlineCount = ref<number | null>(null)
-const socket = io('http://1.94.189.79:3000') // 替换为你的后端地址
+
+// 连接时带上 query.siteId
+const socket: Socket = io('http://1.94.189.79:3000', {
+  query: { siteId }
+})
 
 onMounted(() => {
-  socket.on('onlineCount', count => {
+  socket.on('onlineCount', (count: number) => {
     onlineCount.value = count
-    console.log(" onlineCount.value", onlineCount.value)
   })
 })
 
