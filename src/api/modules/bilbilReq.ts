@@ -9,3 +9,10 @@ export const getBiliFansCount = (): Promise<any> => {
   // 由于默认 baseURL 指向自己后端，这里传入空 baseURL 强制请求 bili 接口
   return http.get("/api/bili/fans", { uid: 372611876 })
 };
+
+
+export const getBiliChargeList = (): Promise<any> => {
+  // 由于默认 baseURL 指向自己后端，这里传入空 baseURL 强制请求 bili 接口
+  return http.get("/api/bili/recharge")
+};
+

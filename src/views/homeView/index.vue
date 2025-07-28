@@ -15,7 +15,8 @@
           rel="noopener"
           aria-label="应援时崎狂三 B 萌战"
         >
-          【应援战役】7.29 B萌16强双败赛N组 三三此刻正站在生死边缘——再输一场，就将惨遭淘汰！ ↗
+          【应援战役】7.29 B萌16强双败赛N组
+          三三此刻正站在生死边缘——再输一场，就将惨遭淘汰！ ↗
         </a>
       </div>
 
@@ -153,20 +154,13 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import rose from "@/assets/rose.png";
-import { getBiliFansCount } from "@/api/modules/bilbilReq";
+import { getBiliChargeList, getBiliFansCount } from "@/api/modules/bilbilReq";
 // 排行榜示例数据
 interface RankItem {
   name: string;
   value: number;
 }
-const ranking = ref<RankItem[]>([
-  { name: "星尘AIGC", value: 34.27 },
-  { name: "狂三丢了枪", value: 22.18 },
-  { name: "三三Night", value: 4.03 },
-  { name: "正是这么", value: 3.36 },
-  { name: "舞溪酱", value: 3.36 },
-  { name: "狂三3三3三3", value: 1.34 },
-]);
+const ranking = ref<RankItem[]>([]);
 const thankList = ref([
   "莺时零散",
   "kurumi",
@@ -302,6 +296,26 @@ onMounted(async () => {
     console.error("请求出错：", err);
   }
 
+  try {
+    const res2 = await getBiliChargeList();
+    if (res2.success) {
+      const rawData = res2.data.data.result;
+      const map = new Map<string, number>();
+      rawData.forEach(({ name, brokerage }) => {
+        map.set(name, (map.get(name) || 0) + brokerage);
+      });
+
+      // 2. 转成数组并排序
+      const result: RankItem[] = Array.from(map.entries())
+        .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
+        .sort((a, b) => b.value - a.value);
+      // 3. 赋值
+      ranking.value = result;
+      console.log("result", result);
+    }
+  } catch (err) {
+    console.error("获取充值记录请求出错：", err);
+  }
   const canvas = canvasEl.value!;
   ctx = canvas.getContext("2d")!;
 
