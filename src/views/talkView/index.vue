@@ -506,7 +506,7 @@ function clearChat() {
       {
         id: Date.now(),
         role: "bot",
-        text: md.render("你好，我是时崎狂三，有什么想知道的吗？"),
+        text: "你好，我是时崎狂三，有什么想知道的吗？",
       },
     ];
     localStorage.removeItem(STORAGE_KEY);
@@ -529,7 +529,7 @@ function loadChatLog(): ChatMsg[] {
     {
       id: Date.now(),
       role: "bot",
-      text: md.render("你好，我是时崎狂三，有什么想知道的吗？"),
+      text: "你好，我是时崎狂三，有什么想知道的吗？",
     },
   ];
 }

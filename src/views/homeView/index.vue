@@ -9,14 +9,11 @@
       <!-- Canvas 层 -->
       <canvas ref="canvasEl" class="rose-canvas"></canvas>
       <div class="announcement">
-        <a
-          href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html"
-          target="_blank"
-          rel="noopener"
-          aria-label="应援时崎狂三 B 萌战"
-        >
-          【应援战役】7.29 B萌16强双败赛N组
-          三三此刻正站在生死边缘——再输一场，就将惨遭淘汰！ ↗
+        <a href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html" target="_blank" rel="noopener"
+          aria-label="应援时崎狂三 B 萌战">
+          【应援战役】7.31 B萌16强双败赛 三三 VS 御坂美琴
+          背水而战，退无可退。
+          一线生机握在我们手中——胜者登峰，败者归途。
         </a>
       </div>
 
@@ -24,9 +21,7 @@
         <div class="hero-text">
           <h1>时崎狂三</h1>
           <p>追寻时间的脚步，掌控命运的轮回</p>
-          <router-link to="/overview" class="btn" aria-label="角色概览"
-            >角色概览</router-link
-          >
+          <router-link to="/overview" class="btn" aria-label="角色概览">角色概览</router-link>
         </div>
       </div>
       <!-- 时钟齿轮装饰 -->
@@ -36,11 +31,7 @@
       <div class="ranking-list">
         <h3>充电鸣谢榜</h3>
         <div class="scroll-list">
-          <div
-            class="rank-item"
-            v-for="(item, idx) in ranking"
-            :key="item.name"
-          >
+          <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
             <span class="rank">{{ idx + 1 }}</span>
             <span class="name">{{ item.name }}</span>
             <span class="value">{{ item.value }}</span>
@@ -73,32 +64,19 @@
             <stop offset="100%" stop-color="#800000" />
           </linearGradient>
         </defs>
-        <path
-          d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z"
-          fill="url(#waveGrad3)"
-        />
+        <path d="M0,40 C300,140 900,-20 1200,60 L1200,100 L0,100 Z" fill="url(#waveGrad3)" />
       </svg>
       <svg class="wave wave2" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.6)"
-        />
+        <path d="M0,50 C400,0 800,150 1200,50 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.6)" />
       </svg>
       <svg class="wave wave3" viewBox="0 0 1200 100" preserveAspectRatio="none">
-        <path
-          d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z"
-          fill="rgba(255,79,79,0.3)"
-        />
+        <path d="M0,30 C200,80 1000,20 1200,70 L1200,100 L0,100 Z" fill="rgba(255,79,79,0.3)" />
       </svg>
     </footer>
 
     <!-- 弹窗：充电榜 -->
     <transition name="fade">
-      <div
-        class="modal-mask"
-        v-if="showRanking"
-        @click.self="showRanking = false"
-      >
+      <div class="modal-mask" v-if="showRanking" @click.self="showRanking = false">
         <div class="modal-wrapper">
           <div class="modal-header">
             <h3>充电鸣谢榜</h3>
@@ -107,11 +85,7 @@
           <div class="modal-body">
             <!-- 直接复用 .ranking-list 的内容 -->
             <div class="scroll-list">
-              <div
-                class="rank-item"
-                v-for="(item, idx) in ranking"
-                :key="item.name"
-              >
+              <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
                 <span class="rank">{{ idx + 1 }}</span>
                 <span class="name">{{ item.name }}</span>
                 <span class="value">{{ item.value }}</span>
@@ -312,9 +286,19 @@ onMounted(async () => {
       // 3. 赋值
       ranking.value = result;
       console.log("result", result);
+      localStorage.setItem('bili-ranking-cache', JSON.stringify(result));
     }
   } catch (err) {
     console.error("获取充值记录请求出错：", err);
+    const cached = localStorage.getItem('bili-ranking-cache');
+    if (cached) {
+      try {
+        ranking.value = JSON.parse(cached);
+        console.log("使用本地缓存排名数据：", ranking.value);
+      } catch (parseErr) {
+        console.error("本地缓存解析失败", parseErr);
+      }
+    }
   }
   const canvas = canvasEl.value!;
   ctx = canvas.getContext("2d")!;
@@ -410,8 +394,7 @@ onBeforeUnmount(() => {
         text-align: center;
         opacity: 0;
         transform: translateX(-20px);
-        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6)
-          forwards;
+        animation: fadeInRight 1s 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
 
         h1 {
           font-family: "Cinzel Decorative", serif;
@@ -434,11 +417,9 @@ onBeforeUnmount(() => {
             width: 60px;
             height: 2px;
             margin: 12px auto 0;
-            background: linear-gradient(
-              90deg,
-              rgba(232, 190, 190, 0),
-              rgba(232, 190, 190, 1)
-            );
+            background: linear-gradient(90deg,
+                rgba(232, 190, 190, 0),
+                rgba(232, 190, 190, 1));
           }
         }
 
@@ -664,6 +645,7 @@ onBeforeUnmount(() => {
   }
 
   @keyframes arrowBounce {
+
     0%,
     100% {
       transform: translateY(0) rotate(-45deg);
@@ -818,11 +800,9 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   margin: 6px 0;
   padding: 6px 10px;
-  background: linear-gradient(
-    135deg,
-    rgba(209, 75, 75, 0.3),
-    rgba(128, 0, 0, 0.3)
-  );
+  background: linear-gradient(135deg,
+      rgba(209, 75, 75, 0.3),
+      rgba(128, 0, 0, 0.3));
   border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -874,11 +854,9 @@ onBeforeUnmount(() => {
 .thank-item {
   margin: 8px 0;
   padding: 8px 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(209, 75, 75, 0.4),
-    rgba(128, 0, 0, 0.4)
-  );
+  background: linear-gradient(135deg,
+      rgba(209, 75, 75, 0.4),
+      rgba(128, 0, 0, 0.4));
   border: 1px solid rgba(209, 75, 75, 0.8);
   border-radius: 24px;
   text-align: center;
