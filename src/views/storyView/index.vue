@@ -60,7 +60,7 @@ import {
   nextTick,
   watch,
   onBeforeUnmount,
-  onUnmounted,
+ 
 } from "vue";
 import { sendMessageToSystem } from "@/api/deepseekApi";
 
