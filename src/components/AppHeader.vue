@@ -5,7 +5,11 @@
       当前在线：<span class="count">{{ onlineCount }}人</span>
     </div>
     <!-- 移动端汉堡按钮 -->
-    <button class="hamburger" @click="isOpen = !isOpen" aria-label="Toggle menu">
+    <button
+      class="hamburger"
+      @click="isOpen = !isOpen"
+      aria-label="Toggle menu"
+    >
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
@@ -14,7 +18,9 @@
     <nav class="nav-list" :class="{ open: isOpen }">
       <ul>
         <li v-for="item in links" :key="item.name" @click="isOpen = false">
-          <router-link :to="item.path" class="link">{{ item.name }}</router-link>
+          <router-link :to="item.path" class="link">{{
+            item.name
+          }}</router-link>
         </li>
       </ul>
     </nav>
@@ -22,41 +28,41 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { io } from 'socket.io-client'
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { io } from "socket.io-client";
 
 const links = ref([
-  { name: '首页', path: '/' },
-  { name: '角色概览', path: '/overview' },
-  { name: '图库', path: '/gallery' },
-  { name: '时间线', path: '/timeline' },
-  { name: '留言板', path: '/board' },
-  { name: '对话狂三', path: '/talk' },
-  { name: '剧情演绎', path: '/story' },
-  { name: '对话书架', path: '/bookshelf' },
-])
+  { name: "首页", path: "/" },
+  { name: "角色概览", path: "/overview" },
+  { name: "图库", path: "/gallery" },
+  { name: "时间线", path: "/timeline" },
+  { name: "留言板", path: "/board" },
+  { name: "对话狂三", path: "/talk" },
+  { name: "剧情演绎", path: "/story" },
+  { name: "对话书架", path: "/bookshelf" },
+]);
 
 // 控制移动端菜单开关
-const isOpen = ref(false)
+const isOpen = ref(false);
 
-const siteId = 'kurumi'
+const siteId = "kurumi";
 
-const onlineCount = ref<number | null>(null)
+const onlineCount = ref<number | null>(null);
 
 // 连接时带上 query.siteId
-const socket: Socket = io('http://1.94.189.79:3000', {
-  query: { siteId }
-})
+const socket = io("http://1.94.189.79:3000", {
+  query: { siteId },
+});
 
 onMounted(() => {
-  socket.on('onlineCount', (count: number) => {
-    onlineCount.value = count
-  })
-})
+  socket.on("onlineCount", (count: number) => {
+    onlineCount.value = count;
+  });
+});
 
 onBeforeUnmount(() => {
-  socket.disconnect()
-})
+  socket.disconnect();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -77,7 +83,7 @@ onBeforeUnmount(() => {
     top: 50%;
     transform: translateY(-50%);
     color: #fde8e8;
-    font-family: 'Cinzel Decorative', serif;
+    font-family: "Cinzel Decorative", serif;
     font-size: 1.05rem;
     background: rgba(0, 0, 0, 0.4);
     padding: 6px 12px;
@@ -92,8 +98,6 @@ onBeforeUnmount(() => {
       text-shadow: 0 0 3px #d14b4b;
     }
   }
-
-
 
   // 汉堡按钮初始隐藏，在移动端才显示
   .hamburger {
@@ -141,7 +145,7 @@ onBeforeUnmount(() => {
         position: relative;
 
         &::before {
-          content: '';
+          content: "";
           position: absolute;
           top: 50%;
           left: 50%;
@@ -154,7 +158,7 @@ onBeforeUnmount(() => {
         }
 
         &::after {
-          content: '';
+          content: "";
           position: absolute;
           top: 50%;
           left: 50%;
@@ -182,7 +186,7 @@ onBeforeUnmount(() => {
         }
 
         .link {
-          font-family: 'Cinzel Decorative', serif;
+          font-family: "Cinzel Decorative", serif;
           font-size: 1.15rem;
           color: #fde8e8;
           text-decoration: none;

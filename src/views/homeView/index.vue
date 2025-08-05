@@ -11,9 +11,8 @@
       <div class="announcement">
         <a href="https://www.bilibili.com/blackboard/era/jQ8lQ7PHbp32izw3.html" target="_blank" rel="noopener"
           aria-label="应援时崎狂三 B 萌战">
-          【应援战役】7.31 B萌16强双败赛 三三 VS 御坂美琴
-          背水而战，退无可退。
-          一线生机握在我们手中——胜者登峰，败者归途。
+          【应援战役】8.3 B萌16强双败赛 三三 VS 伊莉雅
+          这是命运的分岔点——成者高歌猛进，败者遗憾落幕！
         </a>
       </div>
 

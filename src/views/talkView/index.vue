@@ -116,12 +116,10 @@ import {
   nextTick,
   watch,
   onBeforeUnmount,
-  onUnmounted,
+ 
 } from "vue";
 import { sendMessageToKurumi } from "@/api/deepseekApi";
-import MarkdownIt from "markdown-it";
 
-const md = new MarkdownIt();
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
 
@@ -449,7 +447,7 @@ async function sendMessage() {
     chatLog.value.push({
       id: Date.now() + 1,
       role: "bot",
-      text: md.render(botReply),
+      text: botReply,
     });
 
     // 1. 检查里程碑彩蛋，是否触发
