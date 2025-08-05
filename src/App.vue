@@ -1,38 +1,57 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import AppHeader from '@/components/AppHeader.vue'
-import { ref, onMounted } from 'vue'
-const welcomeText = '欢迎来到时崎狂三的世界'.split('')
-const showIntro = ref(true)
-const bgImage = ref('')
+import { RouterView } from "vue-router";
+import AppHeader from "@/components/AppHeader.vue";
+import { ref, onMounted } from "vue";
+const welcomeMessages = [
+  "欢迎来到时崎狂三的世界",
+  "愿你在时间的迷宫中找到属于自己的答案",
+  "世界并不温柔，但她始终迷人",
+  "记住时间的名字，她叫——时崎狂三",
+  "欢迎踏入命运交错的时空剧场",
+];
+
+// 随机选择一条并拆分成字符数组
+const welcomeText =
+  welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)].split("");
+const showIntro = ref(true);
+const bgImage: any = ref("");
 
 // 1. 批量导入图片资源
-const pcImages = Object.values(import.meta.glob('@/assets/images/*.{jpg,png,jpeg,webp}', { eager: true, import: 'default' }))
-const mobileImages = Object.values(import.meta.glob('@/assets/images2/*.{jpg,png,jpeg,webp}', { eager: true, import: 'default' }))
+const pcImages = Object.values(
+  import.meta.glob("@/assets/images/*.{jpg,png,jpeg,webp}", {
+    eager: true,
+    import: "default",
+  })
+);
+const mobileImages = Object.values(
+  import.meta.glob("@/assets/images2/*.{jpg,png,jpeg,webp}", {
+    eager: true,
+    import: "default",
+  })
+);
 onMounted(() => {
-
-  const isMobile = window.innerWidth <= 768
-  const imageList = isMobile ? mobileImages : pcImages
+  const isMobile = window.innerWidth <= 768;
+  const imageList = isMobile ? mobileImages : pcImages;
 
   // 2. 随机选择一张图片
-  const randomIndex = Math.floor(Math.random() * imageList.length)
-  bgImage.value = imageList[randomIndex]
+  const randomIndex = Math.floor(Math.random() * imageList.length);
+  bgImage.value = imageList[randomIndex];
 
   // 3. 3秒后自动结束
   setTimeout(() => {
-    showIntro.value = false
-  }, 3000)
+    showIntro.value = false;
+  }, 3000);
 
-  const script = document.createElement('script')
-  script.src = 'https://unpkg.com/live2d-widget@3.1.4/lib/L2Dwidget.min.js'
+  const script = document.createElement("script");
+  script.src = "https://unpkg.com/live2d-widget@3.1.4/lib/L2Dwidget.min.js";
   script.onload = () => {
     // @ts-ignore 忽略未声明全局变量
     L2Dwidget.init({
       model: {
-        jsonPath: '/live2d/kurumi/model.json',
+        jsonPath: "/live2d/kurumi/model.json",
       },
       display: {
-        position: 'right', // 可选 left/right
+        position: "right", // 可选 left/right
         width: 220,
         height: 400,
       },
@@ -41,10 +60,10 @@ onMounted(() => {
         opacityDefault: 1,
         opacityOnHover: 0.2,
       },
-    })
-  }
-  document.body.appendChild(script)
-})
+    });
+  };
+  document.body.appendChild(script);
+});
 </script>
 
 <template>
@@ -53,8 +72,12 @@ onMounted(() => {
       <div class="intro" @click="showIntro = false">
         <img :src="bgImage" alt="Kurumi" class="intro-bg" />
         <div class="intro-text">
-          <span v-for="(char, index) in welcomeText" :key="index" class="intro-char"
-            :style="{ animationDelay: `${index * 0.1}s` }">
+          <span
+            v-for="(char, index) in welcomeText"
+            :key="index"
+            class="intro-char"
+            :style="{ animationDelay: `${index * 0.1}s` }"
+          >
             {{ char }}
           </span>
         </div>
@@ -114,13 +137,10 @@ onMounted(() => {
   gap: 0.25em;
   flex-wrap: wrap;
   font-size: 2.8rem;
-  font-family: 'Times New Roman', serif;
+  font-family: "Times New Roman", serif;
   font-weight: bold;
   color: #ff4d6d;
-  text-shadow:
-    0 0 8px #ff1a3c,
-    0 0 12px #900020,
-    2px 2px 6px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 0 8px #ff1a3c, 0 0 12px #900020, 2px 2px 6px rgba(0, 0, 0, 0.8);
   letter-spacing: 0.1em;
   text-align: center;
   padding: 0 2rem;
@@ -148,17 +168,21 @@ onMounted(() => {
 /* 整体发光律动 */
 @keyframes glow-pulse {
   0% {
-    text-shadow:
-      0 0 6px #ff4d6d,
-      0 0 12px #ff4d6d,
+    text-shadow: 0 0 6px #ff4d6d, 0 0 12px #ff4d6d,
       2px 2px 6px rgba(0, 0, 0, 0.8);
   }
 
   100% {
-    text-shadow:
-      0 0 14px #ff1a3c,
-      0 0 22px #ff1a3c,
+    text-shadow: 0 0 14px #ff1a3c, 0 0 22px #ff1a3c,
       4px 4px 8px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* 小屏适配 */
+@media (max-width: 767px) {
+  .intro-text {
+    flex-direction:column;
+    font-size: 2rem;
   }
 }
 </style>
