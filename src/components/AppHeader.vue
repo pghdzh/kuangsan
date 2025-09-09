@@ -5,11 +5,7 @@
       当前在线：<span class="count">{{ onlineCount }}人</span>
     </div>
     <!-- 移动端汉堡按钮 -->
-    <button
-      class="hamburger"
-      @click="isOpen = !isOpen"
-      aria-label="Toggle menu"
-    >
+    <button class="hamburger" @click="isOpen = !isOpen" aria-label="Toggle menu">
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
@@ -22,6 +18,7 @@
             item.name
           }}</router-link>
         </li>
+        <li><a href="http://slty.site/#/redirector" target="_blank" class="link">总站</a></li>
       </ul>
     </nav>
   </header>
