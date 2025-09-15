@@ -2,7 +2,7 @@
   <div class="home-container">
     <!-- 主视觉区 -->
     <div class="mobile-header-btns">
-      <button @click="showRanking = true" class="mobile-btn">充电榜</button>
+      <!-- <button @click="showRanking = true" class="mobile-btn">充电榜</button> -->
       <button @click="showThank = true" class="mobile-btn">感谢名单</button>
     </div>
     <section class="hero">
@@ -27,7 +27,7 @@
       <div class="gear-deco gear1"></div>
       <div class="gear-deco gear2"></div>
       <!-- 充电排行榜 -->
-      <div class="ranking-list">
+      <!-- <div class="ranking-list">
         <h3>充电鸣谢榜</h3>
         <div class="scroll-list">
           <div class="rank-item" v-for="(item, idx) in ranking" :key="item.name">
@@ -46,7 +46,7 @@
             style="color: #fff;">已开始（9.13结束）点击跳转
           </a>
         </div>
-      </div>
+      </div> -->
       <div class="thank-list">
         <h3>功能提议感谢名单</h3>
         <div class="scroll-list">
