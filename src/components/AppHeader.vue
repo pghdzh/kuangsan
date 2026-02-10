@@ -35,7 +35,7 @@ const links = ref([
   { name: "时间线", path: "/timeline" },
   { name: "留言板", path: "/board" },
   { name: "对话狂三", path: "/talk" },
-  { name: "剧情演绎", path: "/story" },
+ 
   { name: "对话书架", path: "/bookshelf" },
 ]);
 

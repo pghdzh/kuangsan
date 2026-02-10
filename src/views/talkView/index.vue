@@ -2,8 +2,13 @@
   <div class="chat-page">
     <!-- 背景轮播放在最底层 -->
     <div class="carousel">
-      <img v-for="(src, idx) in randomFive" :key="idx" :src="src" class="carousel-image"
-        :class="{ active: idx === currentIndex }" />
+      <img
+        v-for="(src, idx) in randomFive"
+        :key="idx"
+        :src="src"
+        class="carousel-image"
+        :class="{ active: idx === currentIndex }"
+      />
     </div>
     <div class="chat-container">
       <!-- 统计面板 -->
@@ -22,13 +27,20 @@
           活跃天数：<span>{{ stats.activeDates.length }}</span> 天
         </div>
         <div class="stat-item">
-          今日对话：<span>{{ stats.dailyChats[new Date().toISOString().slice(0, 10)] || 0 }}</span> 次
+          今日对话：<span>{{
+            stats.dailyChats[new Date().toISOString().slice(0, 10)] || 0
+          }}</span>
+          次
         </div>
         <button class="detail-btn" @click="showModal = true">全部</button>
       </div>
       <div class="messages" ref="msgList">
         <transition-group name="msg" tag="div">
-          <div v-for="msg in chatLog" :key="msg.id" :class="['message', msg.role, { error: msg.isError }]">
+          <div
+            v-for="msg in chatLog"
+            :key="msg.id"
+            :class="['message', msg.role, { error: msg.isError }]"
+          >
             <div class="avatar" :class="msg.role"></div>
             <div class="bubble">
               <div class="content" v-html="msg.text"></div>
@@ -49,26 +61,59 @@
       </div>
       <form class="input-area" @submit.prevent="sendMessage">
         <!-- 输入框 -->
-        <input v-model="input" type="text" placeholder="向时崎狂三提问…" :disabled="loading" @keydown="handleKeydown" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="向时崎狂三提问…"
+          :disabled="loading"
+          @keydown="handleKeydown"
+        />
         <!-- 清空 & 语音 图标按钮组 -->
         <div class="btn-group">
-          <button type="button" class="clear-btn" @click="clearChat" :disabled="loading" title="清空对话">
+          <button
+            type="button"
+            class="clear-btn"
+            @click="clearChat"
+            :disabled="loading"
+            title="清空对话"
+          >
             ✖
           </button>
-          <button type="button" class="voice-btn" @click="isVoiceEnabled = !isVoiceEnabled" title="切换语音">
+          <button
+            type="button"
+            class="voice-btn"
+            @click="isVoiceEnabled = !isVoiceEnabled"
+            title="切换语音"
+          >
             {{ isVoiceEnabled ? "🔊" : "🔇" }}
           </button>
         </div>
         <!-- 发送主按钮 -->
-        <button type="submit" class="send-btn" :disabled="!input.trim() || loading">
+        <button
+          type="submit"
+          class="send-btn"
+          :disabled="!input.trim() || loading"
+        >
           发送
         </button>
         <!-- 统计数据按钮 -->
-        <button type="button" class="Alldetail-btn" @click="showModal = true" title="查看统计">
+        <button
+          type="button"
+          class="Alldetail-btn"
+          @click="showModal = true"
+          title="查看统计"
+        >
           统计数据
         </button>
 
-        <button type="button" class="export-btn" @click="exportChat" :disabled="!chatLog.length">导出对话为txt</button>
+        <button
+          type="button"
+          class="export-btn"
+          @click="exportChat"
+          :disabled="!chatLog.length"
+        >
+          导出对话为txt
+        </button>
       </form>
     </div>
 
@@ -84,7 +129,12 @@
             }}
           </li>
           <li>活跃天数：{{ stats.activeDates.length }} 天</li>
-          <li>今日对话：{{ stats.dailyChats[new Date().toISOString().slice(0, 10)] || 0 }} 次</li>
+          <li>
+            今日对话：{{
+              stats.dailyChats[new Date().toISOString().slice(0, 10)] || 0
+            }}
+            次
+          </li>
           <li>总使用时长：{{ formatDuration(stats.totalTime) }}</li>
           <li>当前连续活跃：{{ stats.currentStreak }} 天</li>
           <li>最长连续活跃：{{ stats.longestStreak }} 天</li>
@@ -116,9 +166,8 @@ import {
   nextTick,
   watch,
   onBeforeUnmount,
- 
 } from "vue";
-import { sendMessageToKurumi } from "@/api/deepseekApi";
+import { sendMessageToHui } from "@/api/deepseekApi";
 
 const STORAGE_KEY = "kurumi_chat_log";
 const STORAGE_VOICE_KEY = "kurumi_voice_enabled";
@@ -141,7 +190,6 @@ interface Stats {
     milestone: number;
   };
   totalTime: number; // 累计使用时长（毫秒）
-
 }
 
 // 默认值，用于补齐本地存储中可能缺失的字段
@@ -175,13 +223,12 @@ function saveStats() {
   localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(stats));
 }
 
-
 // 更新「活跃天数」及「连续活跃」逻辑
 function updateActive(date: string) {
   if (!stats.activeDates.includes(date)) {
     stats.activeDates.push(date);
     updateStreak();
-    saveStats();  // 持久化活跃天数变化
+    saveStats(); // 持久化活跃天数变化
   }
 }
 function updateStreak() {
@@ -199,19 +246,19 @@ function updateStreak() {
   });
   stats.currentStreak = dates[dates.length - 1] === todayStr ? curr : 0;
   stats.longestStreak = max;
-  saveStats()
+  saveStats();
 }
 
 // 更新「每日对话次数」
 function updateDaily(date: string) {
   stats.dailyChats[date] = (stats.dailyChats[date] || 0) + 1;
-  saveStats();  // 持久化活跃天数变化
+  saveStats(); // 持久化活跃天数变化
 }
 
 // 记录彩蛋触发
 function recordEgg(type: "encourage" | "noInput" | "milestone") {
   stats.eggCounts[type]++;
-  saveStats();  // 马上持久化
+  saveStats(); // 马上持久化
 }
 
 // 计算最活跃日
@@ -224,9 +271,8 @@ const mostActiveDayComputed = computed(() => {
       day = d;
     }
   }
-  return day || new Date().toISOString().slice(0, 10)
+  return day || new Date().toISOString().slice(0, 10);
 });
-
 
 // 格式化总使用时长
 function formatDuration(ms: number): string {
@@ -423,7 +469,7 @@ async function sendMessage() {
     stats.firstTimestamp = Date.now();
     saveStats();
   }
-  const date = new Date().toISOString().slice(0, 10);  // 每次都取最新“今天”
+  const date = new Date().toISOString().slice(0, 10); // 每次都取最新“今天”
   stats.totalChats++;
   updateActive(date);
   updateDaily(date);
@@ -443,51 +489,53 @@ async function sendMessage() {
   try {
     //  throw new Error("测试错误");
     const history = chatLog.value.filter((msg) => !msg.isEgg && !msg.isError);
-    const botReply = await sendMessageToKurumi(userText, history);
-    chatLog.value.push({
-      id: Date.now() + 1,
-      role: "bot",
-      text: botReply,
-    });
+    const botReply = await sendMessageToHui(userText, history);
+    if (botReply == "error") {
+      playVoice("error");
+      const errorMessages = [
+        "啊啦～灵魂点数似乎不够了呢，狂三可说不出话了哦♡",
+        "刻刻帝的时间已冻结……等能量恢复后我们再继续吧。",
+        "狂三现在有点累了，要不你稍等一下，再来找人家玩呀～",
+        "对不起，灵魂石与时之砂都已耗尽，狂三暂时无法与你对话，请稍后补充能量~",
+        "子弹已空，时间也静止了。暂时无法再与你畅谈……你愿意再次为我启动【刻刻帝】吗？",
+      ];
 
-    // 1. 检查里程碑彩蛋，是否触发
-    const hasMilestone = checkMilestones();
-    // —— 鼓励彩蛋：30% 概率触发 ——
-    if (!hasMilestone && Math.random() < 0.1) {
-      // 随机挑一条
-      const egg =
-        encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
-      recordEgg("encourage");
-      // 播放对应语音（不带 .mp3 后缀）
-      playVoice(egg.file.replace(".mp3", ""));
-      // 推入带标记的彩蛋消息
+      const randomIndex = Math.floor(Math.random() * errorMessages.length);
+
       chatLog.value.push({
         id: Date.now() + 2,
         role: "bot",
-        text: `<p style="opacity:.7;color: #ffb3c1;">${egg.text}</p>`,
-        isEgg: true,
+        text: errorMessages[randomIndex],
+        isError: true,
       });
+    } else {
+      chatLog.value.push({
+        id: Date.now() + 1,
+        role: "bot",
+        text: botReply,
+      }); // 1. 检查里程碑彩蛋，是否触发
+      const hasMilestone = checkMilestones();
+      // —— 鼓励彩蛋：30% 概率触发 ——
+      if (!hasMilestone && Math.random() < 0.1) {
+        // 随机挑一条
+        const egg =
+          encourageEggs[Math.floor(Math.random() * encourageEggs.length)];
+        recordEgg("encourage");
+        // 播放对应语音（不带 .mp3 后缀）
+        playVoice(egg.file.replace(".mp3", ""));
+        // 推入带标记的彩蛋消息
+        chatLog.value.push({
+          id: Date.now() + 2,
+          role: "bot",
+          text: `<p style="opacity:.7;color: #ffb3c1;">${egg.text}</p>`,
+          isEgg: true,
+        });
+      }
     }
+
     // —— 彩蛋结束 ——
   } catch (e) {
     console.error(e);
-    playVoice("error");
-    const errorMessages = [
-      "啊啦～灵魂点数似乎不够了呢，狂三可说不出话了哦♡",
-      "刻刻帝的时间已冻结……等能量恢复后我们再继续吧。",
-      "狂三现在有点累了，要不你稍等一下，再来找人家玩呀～",
-      '对不起，灵魂石与时之砂都已耗尽，狂三暂时无法与你对话，请稍后补充能量~',
-      '子弹已空，时间也静止了。暂时无法再与你畅谈……你愿意再次为我启动【刻刻帝】吗？'
-    ];
-
-    const randomIndex = Math.floor(Math.random() * errorMessages.length);
-
-    chatLog.value.push({
-      id: Date.now() + 2,
-      role: "bot",
-      text: errorMessages[randomIndex],
-      isError: true,
-    });
   } finally {
     loading.value = false;
     await scrollToBottom();
@@ -550,20 +598,20 @@ watch(
 //导出对话记录
 function exportChat() {
   // 将每条消息格式化成“角色：内容”并按行拼接
-  const lines = chatLog.value.map(msg => {
-    const role = msg.role === 'user' ? '你' : '狂三';
+  const lines = chatLog.value.map((msg) => {
+    const role = msg.role === "user" ? "你" : "狂三";
     // 去掉 HTML 标签
-    const text = msg.text.replace(/<[^>]+>/g, '').trim();
+    const text = msg.text.replace(/<[^>]+>/g, "").trim();
     return `${role}：${text}`;
   });
-  const content = lines.join('\n');
+  const content = lines.join("\n");
   // 创建 blob 并触发下载
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   // 文件名可以加个时间戳
-  const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   a.download = `对话记录-${date}.txt`;
   document.body.appendChild(a);
   a.click();
@@ -571,10 +619,9 @@ function exportChat() {
   URL.revokeObjectURL(url);
 }
 
-
 function handleBeforeUnload() {
-  stats.totalTime += Date.now() - sessionStart
-  saveStats()
+  stats.totalTime += Date.now() - sessionStart;
+  saveStats();
 }
 
 onMounted(() => {
@@ -585,16 +632,14 @@ onMounted(() => {
     currentIndex.value = (currentIndex.value + 1) % randomFive.value.length;
   }, 5000);
 
-  window.addEventListener("beforeunload", handleBeforeUnload)
+  window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onBeforeUnmount(() => {
   clearTimeout(idleTimer);
   clearInterval(timer);
-  window.removeEventListener("beforeunload", handleBeforeUnload)
+  window.removeEventListener("beforeunload", handleBeforeUnload);
 });
-
-
 </script>
 
 <style scoped lang="scss">
@@ -609,7 +654,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
 
   @keyframes gradient-flow {
-
     0%,
     100% {
       background-position: 0% 50%;
@@ -789,7 +833,6 @@ onBeforeUnmount(() => {
     }
 
     @keyframes blink {
-
       0%,
       100% {
         opacity: 0;
