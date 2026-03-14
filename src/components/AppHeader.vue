@@ -5,7 +5,11 @@
       当前在线：<span class="count">{{ onlineCount }}人</span>
     </div>
     <!-- 移动端汉堡按钮 -->
-    <button class="hamburger" @click="isOpen = !isOpen" aria-label="Toggle menu">
+    <button
+      class="hamburger"
+      @click="isOpen = !isOpen"
+      aria-label="Toggle menu"
+    >
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
       <span :class="{ open: isOpen }"></span>
@@ -18,7 +22,11 @@
             item.name
           }}</router-link>
         </li>
-        <li><a href="http://slty.site/#/redirector" target="_blank" class="link">总站</a></li>
+        <li>
+          <a href="https://slty.site/#/redirector" target="_blank" class="link"
+            >总站</a
+          >
+        </li>
       </ul>
     </nav>
   </header>
@@ -35,7 +43,7 @@ const links = ref([
   { name: "时间线", path: "/timeline" },
   { name: "留言板", path: "/board" },
   { name: "对话狂三", path: "/talk" },
- 
+
   { name: "对话书架", path: "/bookshelf" },
 ]);
 
@@ -47,7 +55,7 @@ const siteId = "kurumi";
 const onlineCount = ref<number | null>(null);
 
 // 连接时带上 query.siteId
-const socket = io("http://36.150.237.25:3000", {
+const socket = io(import.meta.env.VITE_API_BASE_URL, {
   query: { siteId },
 });
 
